@@ -1,0 +1,154 @@
+rup", (e) => {
+if (!dragging) return;
+dragging = false;
+clearHold();
+if (loupeActive) {
+placeFromCanvasPos(lastPos || getPointerPos(e, canvas));
+hideLoupe();
+} else if (!moved && e.pointerType === "mouse" && canPlace()) {
+placeFromCanvasPos(getPointerPos(e, canvas));
+}
+e.preventDefault();
+});
+stage.addEventListener("pointercancel", () => {
+dragging = false;
+clearHold();
+hideLoupe();
+});
+}
+function handlePhotoPlaced(point) {
+if (state.photoPoints.length >= 11 || state.tracking) return;
+state.photoPoints.push(point);
+if (state.photoPoints.length === 11) buildMesh();
+renderPhotoBase(true);
+updateButtons();
+if (state.photoPoints.length === 11) setStatus("写真側の11点登録が完了しました。次にカメラ側の11点を登録してください。", "ok");
+}
+function handleCamPlaced(point) {
+if (state.camPoints.length >= 11 || state.tracking) return;
+state.camPoints.push(point);
+renderCamBase();
+updateButtons();
+if (state.camPoints.length === 11) setStatus("カメラ側の11点登録が完了しました。「表情リンク開始」を押してください。", "ok");
+}
+async function loadPhoto(file) {
+const url = URL.createObjectURL(file);
+const img = new Image();
+img.onload = () => {
+state.photoImg = img;
+els.photoPlaceholder.classList.add("hidden");
+els.photoCanvas.classList.remove("hidden");
+els.photoZoomBadge.classList.remove("hidden");
+resizeCanvasToStage(els.photoCanvas, els.photoStage, img.naturalWidth, img.naturalHeight);
+state.photoPoints = [];
+state.photoView = {zoom:1, panX:0, panY:0};
+buildMesh();
+renderPhotoBase(true);
+updateButtons();
+setStatus("写真を読み込みました。11点を順番に登録してください。", "ok");
+URL.revokeObjectURL(url);
+};
+img.onerror = () => setStatus("画像を読み込めませんでした。JPEG/PNG/WebPを試してください。", "bad");
+img.src = url;
+}
+async function startCamera() {
+if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+setStatus("この環境ではカメラAPIが使えません。GitHub PagesなどHTTPS環境で開いてください。", "bad");
+return;
+}
+try {
+state.stream = await navigator.mediaDevices.getUserMedia({
+video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480} },
+audio:false
+});
+els.video.srcObject = state.stream;
+await els.video.play();
+els.camPlaceholder.classList.add("hidden");
+els.camCanvas.classList.remove("hidden");
+els.camZoomBadge.classList.remove("hidden");
+resizeCanvasToStage(els.camCanvas, els.camStage, els.video.videoWidth || 640, els.video.videoHeight || 480);
+state.camPoints = [];
+state.camView = {zoom:1, panX:0, panY:0};
+renderCamBase();
+updateButtons();
+setStatus("カメラを開始しました。画面の自分の顔に11点を順番に登録してください。", "ok");
+} catch (e) {
+console.error(e);
+if (e && e.name === "NotAllowedError") {
+setStatus("カメラ権限が拒否されています。ブラウザ設定でカメラを許可してください。", "bad");
+} else {
+setStatus("カメラを開始できませんでした。HTTPS接続か、ブラウザのカメラ権限を確認してください。", "bad");
+}
+}
+}
+function stopCamera() {
+stopTracking();
+if (state.stream) {
+state.stream.getTracks().forEach(t => t.stop());
+state.stream = null;
+}
+els.video.srcObject = null;
+state.camPoints = [];
+els.camCanvas.classList.add("hidden");
+els.camZoomBadge.classList.add("hidden");
+els.camPlaceholder.classList.remove("hidden");
+updateButtons();
+setStatus("カメラを停止しました。", "ok");
+}
+function cleanupCV() {
+[state.cap, state.frameRGBA, state.gray, state.prevGray, state.prevPts, state.nextPts, state.statusMat, state.errMat].forEach(m => {
+try { if (m && m.delete) m.delete(); } catch {}
+});
+state.cap = state.frameRGBA = state.gray = state.prevGray = state.prevPts = state.nextPts = state.statusMat = state.errMat = null;
+}
+function initTracking() {
+cleanupCV();
+const w = els.video.videoWidth, h = els.video.videoHeight;
+state.cap = new cv.VideoCapture(els.video);
+state.frameRGBA = new cv.Mat(h, w, cv.CV_8UC4);
+state.gray = new cv.Mat(h, w, cv.CV_8UC1);
+state.prevGray = new cv.Mat(h, w, cv.CV_8UC1);
+state.prevPts = cv.matFromArray(11, 1, cv.CV_32FC2, state.camPoints.flatMap(p => [p.x, p.y]));
+state.nextPts = new cv.Mat();
+state.statusMat = new cv.Mat();
+state.errMat = new cv.Mat();
+state.cap.read(state.frameRGBA);
+cv.cvtColor(state.frameRGBA, state.prevGray, cv.COLOR_RGBA2GRAY);
+state.currentCamPoints = state.camPoints.map(p => ({...p}));
+state.smoothedCamPoints = state.camPoints.map(p => ({...p}));
+state.neutralCamPoints = state.camPoints.map(p => ({...p}));
+}
+function startTracking() {
+if (!state.cvReady || !state.stream || state.photoPoints.length !== 11 || state.camPoints.length !== 11) return;
+buildMesh();
+initTracking();
+state.tracking = true;
+updateButtons();
+setStatus("表情リンク中です。大きく顔を動かしすぎると追跡が外れることがあります。まずは目・口・眉の変化を中心に試してください。", "ok");
+trackLoop();
+}
+function stopTracking() {
+state.tracking = false;
+cancelAnimationFrame(state.trackRaf);
+cleanupCV();
+if (state.photoImg) renderPhotoBase(true);
+if (state.stream) renderCamBase();
+updateButtons();
+}
+function trackLoop() {
+if (!state.tracking) return;
+try {
+state.cap.read(state.frameRGBA);
+cv.cvtColor(state.frameRGBA, state.gray, cv.COLOR_RGBA2GRAY);
+const winSize = new cv.Size(21,21);
+const criteria = new cv.TermCriteria(cv.TermCriteria_COUNT | cv.TermCriteria_EPS, 20, 0.03);
+cv.calcOpticalFlowPyrLK(state.prevGray, state.gray, state.prevPts, state.nextPts, state.statusMat, state.errMat, winSize, 3, criteria, 0, 0.001);
+const raw = [];
+for (let i=0; i<11; i++) {
+const ok = state.statusMat.data[i] === 1;
+const x = state.nextPts.data32F[i*2];
+const y = state.nextPts.data32F[i*2+1];
+raw.push(ok ? {x,y} : state.currentCamPoints[i]);
+}
+state.currentCamPoints = raw;
+const alpha = Math.max(0.08, 1 - N
