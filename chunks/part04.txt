@@ -1,0 +1,125 @@
+nst canvas = els.photoCanvas;
+const ctx = photoCtx;
+const sourceW = state.photoImg.naturalWidth || state.photoImg.width;
+const sourceH = state.photoImg.naturalHeight || state.photoImg.height;
+const metrics = getBaseMetrics(canvas, sourceW, sourceH);
+ctx.setTransform(1,0,0,1,0,0);
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle = "#05070a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+const photoScale = faceScale(state.photoPoints);
+const camScale = faceScale(state.neutralCamPoints);
+const gain = Number(els.gain.value) / 100;
+const limit = photoScale * 0.35;
+const moving = state.photoPoints.map((p, i) => {
+const dx = ((state.smoothedCamPoints[i].x - state.neutralCamPoints[i].x) / camScale) * photoScale * gain;
+const dy = ((state.smoothedCamPoints[i].y - state.neutralCamPoints[i].y) / camScale) * photoScale * gain;
+return {
+x: p.x + clamp(dx, -limit, limit),
+y: p.y + clamp(dy, -limit, limit)
+};
+});
+const dest = [...moving, ...state.meshBase.slice(11).map(p => ({...p}))];
+for (const tri of state.meshTriangles) {
+const [i0,i1,i2] = tri;
+const s0 = displayFromSource(state.meshBase[i0], metrics, state.photoView, false);
+const s1 = displayFromSource(state.meshBase[i1], metrics, state.photoView, false);
+const s2 = displayFromSource(state.meshBase[i2], metrics, state.photoView, false);
+const d0 = displayFromSource(dest[i0], metrics, state.photoView, false);
+const d1 = displayFromSource(dest[i1], metrics, state.photoView, false);
+const d2 = displayFromSource(dest[i2], metrics, state.photoView, false);
+const m = affine(s0,s1,s2,d0,d1,d2);
+if (!m) continue;
+ctx.save();
+ctx.beginPath();
+ctx.moveTo(d0.x, d0.y);
+ctx.lineTo(d1.x, d1.y);
+ctx.lineTo(d2.x, d2.y);
+ctx.closePath();
+ctx.clip();
+ctx.setTransform(...m);
+const z = state.photoView.zoom;
+const dw = sourceW * metrics.fit * z;
+const dh = sourceH * metrics.fit * z;
+const dx = metrics.cx + state.photoView.panX - dw / 2;
+const dy = metrics.cy + state.photoView.panY - dh / 2;
+ctx.drawImage(state.photoImg, dx, dy, dw, dh);
+ctx.restore();
+}
+els.photoZoomBadge.textContent = Math.round(state.photoView.zoom * 100) + "%";
+}
+function renderCamBase() {
+const canvas = els.camCanvas;
+const ctx = camCtx;
+ctx.setTransform(1,0,0,1,0,0);
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle = "#05070a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+if (!state.stream || !els.video.videoWidth || !els.video.videoHeight) return;
+const sourceW = els.video.videoWidth;
+const sourceH = els.video.videoHeight;
+const metrics = getBaseMetrics(canvas, sourceW, sourceH);
+const z = state.camView.zoom;
+const dw = sourceW * metrics.fit * z;
+const dh = sourceH * metrics.fit * z;
+const dx = metrics.cx + state.camView.panX - dw / 2;
+const dy = metrics.cy + state.camView.panY - dh / 2;
+ctx.save();
+ctx.translate(metrics.cx + state.camView.panX, metrics.cy + state.camView.panY);
+ctx.scale(-metrics.fit * z, metrics.fit * z);
+ctx.drawImage(els.video, -sourceW / 2, -sourceH / 2, sourceW, sourceH);
+ctx.restore();
+const pts = state.tracking ? state.currentCamPoints : state.camPoints;
+pts.forEach((p, i) => {
+const cp = sourceToCanvas(p, metrics, state.camView, true);
+drawPoint(ctx, cp.x, cp.y, i, i === pts.length - 1);
+});
+els.camZoomBadge.textContent = Math.round(state.camView.zoom * 100) + "%";
+}
+function displayFromSource(point, metrics, view, mirrored=false) {
+return sourceToCanvas(point, metrics, view, mirrored);
+}
+function faceScale(pts) {
+if (!pts || pts.length < 4) return 1;
+const eyeL = { x:(pts[0].x + pts[1].x)/2, y:(pts[0].y + pts[1].y)/2 };
+const eyeR = { x:(pts[2].x + pts[3].x)/2, y:(pts[2].y + pts[3].y)/2 };
+return Math.max(1, Math.hypot(eyeL.x - eyeR.x, eyeL.y - eyeR.y));
+}
+function circumcircle(a,b,c) {
+const d = 2 * (a.x*(b.y-c.y) + b.x*(c.y-a.y) + c.x*(a.y-b.y));
+if (Math.abs(d) < 1e-9) return null;
+const a2 = a.x*a.x + a.y*a.y, b2 = b.x*b.x + b.y*b.y, c2 = c.x*c.x + c.y*c.y;
+const ux = (a2*(b.y-c.y) + b2*(c.y-a.y) + c2*(a.y-b.y)) / d;
+const uy = (a2*(c.x-b.x) + b2*(a.x-c.x) + c2*(b.x-a.x)) / d;
+return { x:ux, y:uy, r2:(ux-a.x)**2 + (uy-a.y)**2 };
+}
+function delaunay(points) {
+if (points.length < 3) return [];
+let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+points.forEach(p => { minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y); });
+const d = Math.max(maxX-minX, maxY-minY);
+const mx = (minX+maxX)/2, my = (minY+maxY)/2;
+const pts = points.map(p => ({...p}));
+const s0 = pts.length, s1 = s0+1, s2 = s0+2;
+pts.push({x:mx - 20*d, y:my - d}, {x:mx, y:my + 20*d}, {x:mx + 20*d, y:my - d});
+let tris = [[s0,s1,s2]];
+for (let i=0;i<points.length;i++) {
+const bad = [];
+for (let t=0;t<tris.length;t++) {
+const tri = tris[t];
+const cc = circumcircle(pts[tri[0]], pts[tri[1]], pts[tri[2]]);
+if (cc && ((pts[i].x-cc.x)**2 + (pts[i].y-cc.y)**2 <= cc.r2 + 1e-6)) bad.push(t);
+}
+const edges = [];
+for (const idx of bad) {
+const tr = tris[idx];
+[[tr[0],tr[1]],[tr[1],tr[2]],[tr[2],tr[0]]].forEach(e => {
+const rev = edges.findIndex(x => x[0]===e[1] && x[1]===e[0]);
+if (rev >= 0) edges.splice(rev, 1);
+else edges.push(e);
+});
+}
+tris = tris.filter((_, idx) => !bad.includes(idx));
+edges.forEach(e => tris.push([e[0], e[1], i]));
+}
+return tris.filter(t => t[0] < points.length && t[1] < points.length && t[2] < points.leng
