@@ -1,0 +1,156 @@
+eHint">画面は鏡表示です。見たままの場所をタップすればOKです。</div>
+<div class="loupe" id="camLoupe"><canvas></canvas></div>
+</div>
+<div class="prompt" id="camPrompt">カメラを開始してください。</div>
+<div class="toolbar">
+<button class="btn primary" id="cameraBtn">カメラ開始</button>
+<button class="btn" id="camUndo" disabled>1点戻す</button>
+<button class="btn" id="camReset" disabled>点をやり直す</button>
+</div>
+<div class="toolbar">
+<button class="btn" id="camZoomOut" disabled>−</button>
+<button class="btn" id="camZoomIn" disabled>＋</button>
+<button class="btn" id="camZoomReset" disabled>ズーム初期化</button>
+</div>
+<video id="video" autoplay playsinline muted></video>
+</section>
+</div>
+<div class="controls">
+<button class="btn primary wide" id="startTrackBtn" disabled>表情リンク開始</button>
+<div class="rangeCard">
+<div class="rangeTop"><span>表情の強さ</span><span id="gainValue">100%</span></div>
+<input id="gain" type="range" min="30" max="180" value="100">
+</div>
+<div class="rangeCard">
+<div class="rangeTop"><span>追従の滑らかさ</span><span id="smoothValue">55%</span></div>
+<input id="smooth" type="range" min="0" max="90" value="55">
+</div>
+<div class="row wide">
+<button class="btn" id="neutralBtn" disabled>今の表情を基準にする</button>
+<button class="btn" id="stopTrackBtn" disabled>追跡停止</button>
+<button class="btn" id="stopCameraBtn" disabled>カメラ停止</button>
+<button class="btn" id="saveBtn" disabled>結果画像を保存</button>
+</div>
+<div class="diag wide">
+<div class="diagRow"><span>HTTPS / 安全な接続</span><b id="secureDiag">確認中</b></div>
+<div class="diagRow"><span>カメラAPI</span><b id="cameraDiag">確認中</b></div>
+<div class="diagRow"><span>OpenCV.js</span><b id="cvDiag">読み込み中</b></div>
+<div class="diagRow"><span>写真ポイント</span><b id="photoDiag">0 / 11</b></div>
+<div class="diagRow"><span>カメラポイント</span><b id="camDiag">0 / 11</b></div>
+</div>
+<div class="status wide" id="status">準備中です。</div>
+</div>
+<div class="help">
+<b>GitHub Pagesでの使い方:</b> このファイル群をGitHubリポジトリへ置いて、Settings → Pages → Deploy from a branch を有効化してください。
+公開されたURLはHTTPSになるため、スマホでもカメラが利用できます。
+</div>
+</div>
+<script>
+const POINTS = [
+"左目・上まぶた中央",
+"左目・下まぶた中央",
+"右目・上まぶた中央",
+"右目・下まぶた中央",
+"口・左端",
+"口・右端",
+"上唇中央",
+"下唇中央",
+"左眉中央",
+"右眉中央",
+"鼻先"
+];
+const $ = s => document.querySelector(s);
+const state = {
+cvReady: false,
+stream: null,
+uiRaf: 0,
+trackRaf: 0,
+tracking: false,
+photoImg: null,
+photoPoints: [],
+camPoints: [],
+currentCamPoints: [],
+smoothedCamPoints: [],
+neutralCamPoints: [],
+photoView: {zoom:1, panX:0, panY:0},
+camView: {zoom:1, panX:0, panY:0},
+meshBase: [],
+meshTriangles: [],
+cap: null, frameRGBA: null, gray: null, prevGray: null, prevPts: null, nextPts: null, statusMat: null, errMat: null,
+};
+const els = {
+photoStage: $("#photoStage"),
+photoCanvas: $("#photoCanvas"),
+photoPlaceholder: $("#photoPlaceholder"),
+photoPrompt: $("#photoPrompt"),
+photoInput: $("#photoInput"),
+photoUndo: $("#photoUndo"),
+photoReset: $("#photoReset"),
+photoZoomIn: $("#photoZoomIn"),
+photoZoomOut: $("#photoZoomOut"),
+photoZoomReset: $("#photoZoomReset"),
+photoZoomBadge: $("#photoZoomBadge"),
+photoLoupe: $("#photoLoupe"),
+camStage: $("#camStage"),
+camCanvas: $("#camCanvas"),
+camPlaceholder: $("#camPlaceholder"),
+camPrompt: $("#camPrompt"),
+cameraBtn: $("#cameraBtn"),
+camUndo: $("#camUndo"),
+camReset: $("#camReset"),
+camZoomIn: $("#camZoomIn"),
+camZoomOut: $("#camZoomOut"),
+camZoomReset: $("#camZoomReset"),
+camZoomBadge: $("#camZoomBadge"),
+camLoupe: $("#camLoupe"),
+video: $("#video"),
+startTrackBtn: $("#startTrackBtn"),
+neutralBtn: $("#neutralBtn"),
+stopTrackBtn: $("#stopTrackBtn"),
+stopCameraBtn: $("#stopCameraBtn"),
+saveBtn: $("#saveBtn"),
+gain: $("#gain"),
+smooth: $("#smooth"),
+gainValue: $("#gainValue"),
+smoothValue: $("#smoothValue"),
+status: $("#status"),
+secureDiag: $("#secureDiag"),
+cameraDiag: $("#cameraDiag"),
+cvDiag: $("#cvDiag"),
+photoDiag: $("#photoDiag"),
+camDiag: $("#camDiag"),
+};
+const photoCtx = els.photoCanvas.getContext("2d");
+const camCtx = els.camCanvas.getContext("2d");
+function setStatus(msg, cls="") {
+els.status.textContent = msg;
+els.status.className = "status wide" + (cls ? " " + cls : "");
+}
+function setDiag(el, text, cls="") {
+el.textContent = text;
+el.className = cls;
+}
+function updateDiagnostics() {
+setDiag(els.secureDiag, window.isSecureContext ? "OK" : "NG", window.isSecureContext ? "good" : "bad");
+const camApi = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+setDiag(els.cameraDiag, camApi ? "利用可能" : "利用不可", camApi ? "good" : "bad");
+setDiag(els.cvDiag, state.cvReady ? "準備完了" : "読み込み中", state.cvReady ? "good" : "mid");
+els.photoDiag.textContent = `${state.photoPoints.length} / 11`;
+els.camDiag.textContent = `${state.camPoints.length} / 11`;
+}
+function nextPrompt(points) {
+if (points.length >= POINTS.length) return "11点登録完了";
+return `次: ${points.length + 1}/11 「${POINTS[points.length]}」`;
+}
+function updatePrompts() {
+els.photoPrompt.innerHTML = state.photoPoints.length >= 11
+? "<strong>写真側の11点登録が完了しました。</strong>"
+: (state.photoImg ? nextPrompt(state.photoPoints) : "写真を選択してください。");
+els.camPrompt.innerHTML = state.camPoints.length >= 11
+? "<strong>カメラ側の11点登録が完了しました。</strong>"
+: (state.stream ? nextPrompt(state.camPoints) : "カメラを開始してください。");
+}
+function updateButtons() {
+const photoReady = !!state.photoImg;
+const camReady = !!state.stream;
+const canStartTrack = photoReady && camReady && state.photoP
