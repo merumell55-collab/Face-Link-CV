@@ -39,3 +39,5 @@ jobs:
           git add index.html
           git commit -m "Replace compressed loader with plain HTML"
           git push
+
+# trigger unpack
