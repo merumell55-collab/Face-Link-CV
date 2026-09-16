@@ -1,46 +1,10 @@
-name: Build Plain Face Link HTML
+name: Face Link legacy assembler
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build:
+  info:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Assemble plain index.html from chunks
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          parts = sorted(Path('chunks').glob('part*.txt'))
-          if len(parts) != 7:
-              raise SystemExit(f'Expected 7 chunks, found {len(parts)}')
-          html = ''.join(p.read_text(encoding='utf-8') for p in parts)
-          Path('index.html').write_text(html, encoding='utf-8')
-          print('Assembled index.html:', len(html), 'characters')
-          PY
-      - name: Verify plain HTML
-        run: |
-          grep -q '<!doctype html>' index.html
-          grep -q 'Face Link GitHub Edition' index.html
-          grep -q 'OpenCV準備待ち' index.html
-          if grep -q 'DecompressionStream\|pako.ungzip\|compressed.html' index.html; then
-            echo 'Unexpected loader code remains in index.html'
-            exit 1
-          fi
-      - name: Commit plain index.html
-        run: |
-          if git diff --quiet -- index.html; then
-            echo "index.html already current"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Deploy plain Face Link HTML"
-          git push
+      - run: echo "Legacy assembler disabled; index.html is maintained directly."
