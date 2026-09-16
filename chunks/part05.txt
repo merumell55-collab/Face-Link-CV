@@ -1,0 +1,154 @@
+th);
+}
+function buildMesh() {
+if (state.photoPoints.length !== 11) return;
+const xs = state.photoPoints.map(p => p.x), ys = state.photoPoints.map(p => p.y);
+const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+const padX = (maxX-minX) * 0.55;
+const padY = (maxY-minY) * 0.65;
+const sourceW = state.photoImg.naturalWidth || state.photoImg.width;
+const sourceH = state.photoImg.naturalHeight || state.photoImg.height;
+const L = clamp(minX-padX, 0, sourceW);
+const R = clamp(maxX+padX, 0, sourceW);
+const T = clamp(minY-padY, 0, sourceH);
+const B = clamp(maxY+padY, 0, sourceH);
+const anchors = [
+{x:L,y:T},{x:(L+R)/2,y:T},{x:R,y:T},
+{x:L,y:(T+B)/2},{x:R,y:(T+B)/2},
+{x:L,y:B},{x:(L+R)/2,y:B},{x:R,y:B}
+];
+state.meshBase = [...state.photoPoints.map(p => ({...p})), ...anchors];
+state.meshTriangles = delaunay(state.meshBase);
+}
+function affine(s0,s1,s2,d0,d1,d2) {
+const det = s0.x*(s1.y-s2.y) + s1.x*(s2.y-s0.y) + s2.x*(s0.y-s1.y);
+if (Math.abs(det) < 1e-6) return null;
+const a = (d0.x*(s1.y-s2.y)+d1.x*(s2.y-s0.y)+d2.x*(s0.y-s1.y))/det;
+const c = (d0.x*(s2.x-s1.x)+d1.x*(s0.x-s2.x)+d2.x*(s1.x-s0.x))/det;
+const e = (d0.x*(s1.x*s2.y-s2.x*s1.y)+d1.x*(s2.x*s0.y-s0.x*s2.y)+d2.x*(s0.x*s1.y-s1.x*s0.y))/det;
+const b = (d0.y*(s1.y-s2.y)+d1.y*(s2.y-s0.y)+d2.y*(s0.y-s1.y))/det;
+const d = (d0.y*(s2.x-s1.x)+d1.y*(s0.x-s2.x)+d2.y*(s1.x-s0.x))/det;
+const f = (d0.y*(s1.x*s2.y-s2.x*s1.y)+d1.y*(s2.x*s0.y-s0.x*s2.y)+d2.y*(s0.x*s1.y-s1.x*s0.y))/det;
+return [a,b,c,d,e,f];
+}
+function setZoom(which, delta) {
+const view = which === "photo" ? state.photoView : state.camView;
+view.zoom = clamp(view.zoom + delta, 1, 5);
+if (which === "photo") renderPhotoBase(!state.tracking);
+else renderCamBase();
+}
+function resetZoom(which) {
+const view = which === "photo" ? state.photoView : state.camView;
+view.zoom = 1; view.panX = 0; view.panY = 0;
+if (which === "photo") renderPhotoBase(!state.tracking);
+else renderCamBase();
+}
+function createSurfaceInteraction({canvas, stage, type, pointsRef, viewRef, sourceSize, mirrored, loupeEl, onPlaced}) {
+const loupeCanvas = loupeEl.querySelector("canvas");
+const loupeCtx = loupeCanvas.getContext("2d");
+let dragging = false;
+let dragStart = null;
+let panStart = null;
+let holdTimer = null;
+let loupeActive = false;
+let lastPos = null;
+let moved = false;
+function getMetrics() {
+const [sw, sh] = sourceSize();
+return getBaseMetrics(canvas, sw, sh);
+}
+function canPlace() {
+return !state.tracking && pointsRef().length < 11;
+}
+function drawLoupe(canvasPos) {
+const [sw, sh] = sourceSize();
+const metrics = getBaseMetrics(canvas, sw, sh);
+const srcPos = canvasToSource(canvasPos, metrics, viewRef(), mirrored());
+const ctx = (type === "photo") ? photoCtx : camCtx;
+loupeCanvas.width = 120;
+loupeCanvas.height = 120;
+loupeCtx.setTransform(1,0,0,1,0,0);
+loupeCtx.clearRect(0,0,120,120);
+loupeCtx.fillStyle = "#000";
+loupeCtx.fillRect(0,0,120,120);
+loupeCtx.save();
+loupeCtx.beginPath();
+loupeCtx.arc(60,60,60,0,Math.PI*2);
+loupeCtx.clip();
+loupeCtx.drawImage(canvas, srcPos.x ? 0 : 0, 0); // dummy call not used
+loupeCtx.restore();
+const region = 28;
+loupeCtx.save();
+loupeCtx.beginPath();
+loupeCtx.arc(60,60,60,0,Math.PI*2);
+loupeCtx.clip();
+loupeCtx.drawImage(
+canvas,
+canvasPos.x - region, canvasPos.y - region, region * 2, region * 2,
+0, 0, 120, 120
+);
+loupeCtx.restore();
+drawCrosshair(loupeCtx, 60, 60);
+const rect = stage.getBoundingClientRect();
+const scaleX = rect.width / canvas.width;
+const scaleY = rect.height / canvas.height;
+const leftPx = (canvasPos.x * scaleX) - 60;
+const topPx = (canvasPos.y * scaleY) - 130;
+loupeEl.style.left = clamp(leftPx, 6, rect.width - 126) + "px";
+loupeEl.style.top = clamp(topPx, 6, rect.height - 126) + "px";
+loupeEl.style.display = "block";
+}
+function hideLoupe() {
+loupeActive = false;
+loupeEl.style.display = "none";
+}
+function placeFromCanvasPos(canvasPos) {
+const [sw, sh] = sourceSize();
+const metrics = getBaseMetrics(canvas, sw, sh);
+const src = canvasToSource(canvasPos, metrics, viewRef(), mirrored());
+const point = { x: clamp(src.x, 0, sw), y: clamp(src.y, 0, sh) };
+onPlaced(point);
+}
+function startHold(canvasPos) {
+if (!canPlace()) return;
+holdTimer = setTimeout(() => {
+loupeActive = true;
+drawLoupe(canvasPos);
+}, 160);
+}
+function clearHold() {
+if (holdTimer) clearTimeout(holdTimer);
+holdTimer = null;
+}
+stage.addEventListener("pointerdown", (e) => {
+if (e.pointerType === "mouse" && e.button !== 0) return;
+if ((type === "photo" && !state.photoImg) || (type === "cam" && !state.stream)) return;
+canvas.setPointerCapture(e.pointerId);
+dragging = true;
+moved = false;
+const pos = getPointerPos(e, canvas);
+lastPos = pos;
+dragStart = pos;
+panStart = { x:viewRef().panX, y:viewRef().panY };
+startHold(pos);
+e.preventDefault();
+});
+stage.addEventListener("pointermove", (e) => {
+if (!dragging) return;
+const pos = getPointerPos(e, canvas);
+const dx = pos.x - dragStart.x;
+const dy = pos.y - dragStart.y;
+if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+lastPos = pos;
+if (loupeActive) {
+drawLoupe(pos);
+} else if (moved && !state.tracking) {
+clearHold();
+viewRef().panX = panStart.x + dx;
+viewRef().panY = panStart.y + dy;
+if (type === "photo") renderPhotoBase(true);
+else renderCamBase();
+}
+e.preventDefault();
+});
+stage.addEventListener("pointe
