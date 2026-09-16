@@ -1,1 +1,1085 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0d12"><title>Face Link CV</title><style>html,body{margin:0;background:#0b0d12;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}#m{padding:28px;min-height:100vh;box-sizing:border-box;font-size:18px;line-height:1.6}</style></head><body><div id="m">Face Link CV を起動しています…</div><script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script><script>(async()=>{const m=document.getElementById('m');try{if(!window.pako)throw new Error('展開ライブラリを読み込めませんでした');const r=await fetch('./compressed.html?v=2',{cache:'no-store'});if(!r.ok)throw new Error('本体取得エラー '+r.status);const s=await r.text();const x=s.match(/atob\("([A-Za-z0-9+/=]+)"\)/);if(!x)throw new Error('本体データを見つけられませんでした');const b=atob(x[1]);const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const html=new TextDecoder('utf-8').decode(pako.ungzip(u));document.open();document.write(html);document.close()}catch(e){m.textContent='起動に失敗しました: '+(e&&e.message?e.message:String(e))}})();</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0b0d12" />
+<title>Face Link GitHub Edition</title>
+<style>
+:root{
+color-scheme:dark;
+--bg:#0b0d12;
+--panel:#151b26;
+--panel2:#1b2331;
+--text:#f4f7fb;
+--muted:#9aa7ba;
+--border:#2b3447;
+--accent:#84a5ff;
+--ok:#52d49d;
+--warn:#ffc56b;
+--bad:#ff7888;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input{font:inherit}
+.app{max-width:1100px;margin:0 auto;padding:14px 12px 40px}
+h1{margin:2px 0 6px;font-size:24px}
+.sub{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
+.grid{display:grid;gap:12px}
+.panel{
+background:var(--panel);
+border:1px solid var(--border);
+border-radius:16px;
+padding:12px;
+}
+.panel h2{font-size:15px;margin:0 0 8px}
+.stage{
+position:relative;
+min-height:280px;
+background:#07090d;
+border:1px solid var(--border);
+border-radius:14px;
+overflow:hidden;
+display:grid;
+place-items:center;
+}
+.stage canvas{
+width:100%;
+height:auto;
+display:block;
+touch-action:none;
+}
+.placeholder{
+padding:40px 20px;
+text-align:center;
+color:var(--muted);
+}
+.placeholder b{
+display:block;
+color:var(--text);
+font-size:17px;
+margin-bottom:6px;
+}
+.toolbar,.row{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:10px;
+}
+.btn,.filebtn{
+min-height:44px;
+padding:0 14px;
+border-radius:12px;
+border:1px solid var(--border);
+background:var(--panel2);
+color:var(--text);
+display:inline-flex;
+align-items:center;
+justify-content:center;
+font-weight:700;
+text-decoration:none;
+cursor:pointer;
+}
+.btn.primary{
+background:var(--accent);
+color:#0a1020;
+border-color:transparent;
+}
+.btn:disabled{opacity:.42;cursor:default}
+.filebtn input{display:none}
+.prompt,.status,.diag,.rangeCard{
+background:var(--panel);
+border:1px solid var(--border);
+border-radius:14px;
+padding:11px 12px;
+}
+.prompt{font-size:13px;line-height:1.5}
+.prompt strong{color:var(--accent)}
+.status{
+font-size:13px;
+line-height:1.6;
+color:var(--muted);
+}
+.status.ok{color:var(--ok)}
+.status.warn{color:var(--warn)}
+.status.bad{color:var(--bad)}
+.diag{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.diagRow{display:flex;justify-content:space-between;gap:12px}
+.good{color:var(--ok)}
+.mid{color:var(--warn)}
+.bad{color:var(--bad)}
+.controls{display:grid;gap:12px;margin-top:12px}
+.rangeTop{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.rangeTop span:last-child{color:var(--muted)}
+input[type=range]{width:100%;margin-top:8px}
+.help{
+margin-top:12px;
+font-size:12px;
+line-height:1.65;
+color:var(--muted);
+}
+.hidden{display:none !important}
+.caption{
+font-size:12px;
+color:var(--muted);
+margin-top:8px;
+line-height:1.5;
+}
+.zoomBadge{
+position:absolute;
+left:10px; top:10px;
+background:#000b;
+border:1px solid #ffffff24;
+border-radius:999px;
+padding:6px 10px;
+font-size:12px;
+backdrop-filter:blur(8px);
+}
+.loupe{
+position:absolute;
+width:120px;height:120px;
+border-radius:50%;
+border:3px solid #fff;
+overflow:hidden;
+pointer-events:none;
+box-shadow:0 8px 24px rgba(0,0,0,.35);
+background:#000;
+display:none;
+z-index:20;
+}
+.loupe canvas{width:100%;height:100%;display:block}
+.stageHint{
+position:absolute;
+right:10px;
+top:10px;
+background:#000b;
+border:1px solid #ffffff24;
+border-radius:10px;
+padding:7px 10px;
+font-size:11px;
+color:#d8deea;
+max-width:58%;
+backdrop-filter:blur(8px);
+}
+video{display:none}
+@media(min-width:860px){
+.grid{grid-template-columns:1fr 1fr}
+.controls{grid-template-columns:1fr 1fr}
+.wide{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Face Link GitHub Edition</h1>
+<div class="sub">
+GitHub Pagesでそのまま動かせる静的Webアプリです。顔AIは使わず、OpenCV.jsのOptical Flowで自分の顔のポイントを追跡し、
+アップロードした人物写真へ表情を反映します。<br>
+<b>新機能:</b> 写真/カメラ両方でズーム操作、ドラッグで移動、長押し中の虫眼鏡表示、離した位置にポイント配置、診断表示、保存、基準表情リセット対応。
+</div>
+<div class="grid">
+<section class="panel">
+<h2>1. 動かしたい人物写真</h2>
+<div class="stage" id="photoStage">
+<div class="placeholder" id="photoPlaceholder">
+<b>写真を選択</b>
+顔が正面に近く、大きく写っている写真ほど安定します。
+</div>
+<canvas id="photoCanvas" class="hidden"></canvas>
+<div class="zoomBadge hidden" id="photoZoomBadge">100%</div>
+<div class="stageHint">1本指ドラッグで移動 / ＋−でズーム / 長押し中に虫眼鏡、指を離すとポイント配置</div>
+<div class="loupe" id="photoLoupe"><canvas></canvas></div>
+</div>
+<div class="prompt" id="photoPrompt">写真を選択してください。</div>
+<div class="toolbar">
+<label class="filebtn">写真を選択<input id="photoInput" type="file" accept="image/*"></label>
+<button class="btn" id="photoUndo" disabled>1点戻す</button>
+<button class="btn" id="photoReset" disabled>点をやり直す</button>
+</div>
+<div class="toolbar">
+<button class="btn" id="photoZoomOut" disabled>−</button>
+<button class="btn" id="photoZoomIn" disabled>＋</button>
+<button class="btn" id="photoZoomReset" disabled>ズーム初期化</button>
+</div>
+<div class="caption">ポイント順: 左目上 / 左目下 / 右目上 / 右目下 / 口左 / 口右 / 上唇 / 下唇 / 左眉 / 右眉 / 鼻先</div>
+</section>
+<section class="panel">
+<h2>2. 自分の顔をカメラ登録</h2>
+<div class="stage" id="camStage">
+<div class="placeholder" id="camPlaceholder">
+<b>カメラ開始</b>
+GitHub PagesなどのHTTPS環境で開くと、スマホでもカメラを利用できます。
+</div>
+<canvas id="camCanvas" class="hidden"></canvas>
+<div class="zoomBadge hidden" id="camZoomBadge">100%</div>
+<div class="stageHint">画面は鏡表示です。見たままの場所をタップすればOKです。</div>
+<div class="loupe" id="camLoupe"><canvas></canvas></div>
+</div>
+<div class="prompt" id="camPrompt">カメラを開始してください。</div>
+<div class="toolbar">
+<button class="btn primary" id="cameraBtn">カメラ開始</button>
+<button class="btn" id="camUndo" disabled>1点戻す</button>
+<button class="btn" id="camReset" disabled>点をやり直す</button>
+</div>
+<div class="toolbar">
+<button class="btn" id="camZoomOut" disabled>−</button>
+<button class="btn" id="camZoomIn" disabled>＋</button>
+<button class="btn" id="camZoomReset" disabled>ズーム初期化</button>
+</div>
+<video id="video" autoplay playsinline muted></video>
+</section>
+</div>
+<div class="controls">
+<button class="btn primary wide" id="startTrackBtn" disabled>表情リンク開始</button>
+<div class="rangeCard">
+<div class="rangeTop"><span>表情の強さ</span><span id="gainValue">100%</span></div>
+<input id="gain" type="range" min="30" max="180" value="100">
+</div>
+<div class="rangeCard">
+<div class="rangeTop"><span>追従の滑らかさ</span><span id="smoothValue">55%</span></div>
+<input id="smooth" type="range" min="0" max="90" value="55">
+</div>
+<div class="row wide">
+<button class="btn" id="neutralBtn" disabled>今の表情を基準にする</button>
+<button class="btn" id="stopTrackBtn" disabled>追跡停止</button>
+<button class="btn" id="stopCameraBtn" disabled>カメラ停止</button>
+<button class="btn" id="saveBtn" disabled>結果画像を保存</button>
+</div>
+<div class="diag wide">
+<div class="diagRow"><span>HTTPS / 安全な接続</span><b id="secureDiag">確認中</b></div>
+<div class="diagRow"><span>カメラAPI</span><b id="cameraDiag">確認中</b></div>
+<div class="diagRow"><span>OpenCV.js</span><b id="cvDiag">読み込み中</b></div>
+<div class="diagRow"><span>写真ポイント</span><b id="photoDiag">0 / 11</b></div>
+<div class="diagRow"><span>カメラポイント</span><b id="camDiag">0 / 11</b></div>
+</div>
+<div class="status wide" id="status">準備中です。</div>
+</div>
+<div class="help">
+<b>GitHub Pagesでの使い方:</b> このファイル群をGitHubリポジトリへ置いて、Settings → Pages → Deploy from a branch を有効化してください。
+公開されたURLはHTTPSになるため、スマホでもカメラが利用できます。
+</div>
+</div>
+<script>
+const POINTS = [
+"左目・上まぶた中央",
+"左目・下まぶた中央",
+"右目・上まぶた中央",
+"右目・下まぶた中央",
+"口・左端",
+"口・右端",
+"上唇中央",
+"下唇中央",
+"左眉中央",
+"右眉中央",
+"鼻先"
+];
+const $ = s => document.querySelector(s);
+const state = {
+cvReady: false,
+stream: null,
+uiRaf: 0,
+trackRaf: 0,
+tracking: false,
+photoImg: null,
+photoPoints: [],
+camPoints: [],
+currentCamPoints: [],
+smoothedCamPoints: [],
+neutralCamPoints: [],
+photoView: {zoom:1, panX:0, panY:0},
+camView: {zoom:1, panX:0, panY:0},
+meshBase: [],
+meshTriangles: [],
+cap: null, frameRGBA: null, gray: null, prevGray: null, prevPts: null, nextPts: null, statusMat: null, errMat: null,
+};
+const els = {
+photoStage: $("#photoStage"),
+photoCanvas: $("#photoCanvas"),
+photoPlaceholder: $("#photoPlaceholder"),
+photoPrompt: $("#photoPrompt"),
+photoInput: $("#photoInput"),
+photoUndo: $("#photoUndo"),
+photoReset: $("#photoReset"),
+photoZoomIn: $("#photoZoomIn"),
+photoZoomOut: $("#photoZoomOut"),
+photoZoomReset: $("#photoZoomReset"),
+photoZoomBadge: $("#photoZoomBadge"),
+photoLoupe: $("#photoLoupe"),
+camStage: $("#camStage"),
+camCanvas: $("#camCanvas"),
+camPlaceholder: $("#camPlaceholder"),
+camPrompt: $("#camPrompt"),
+cameraBtn: $("#cameraBtn"),
+camUndo: $("#camUndo"),
+camReset: $("#camReset"),
+camZoomIn: $("#camZoomIn"),
+camZoomOut: $("#camZoomOut"),
+camZoomReset: $("#camZoomReset"),
+camZoomBadge: $("#camZoomBadge"),
+camLoupe: $("#camLoupe"),
+video: $("#video"),
+startTrackBtn: $("#startTrackBtn"),
+neutralBtn: $("#neutralBtn"),
+stopTrackBtn: $("#stopTrackBtn"),
+stopCameraBtn: $("#stopCameraBtn"),
+saveBtn: $("#saveBtn"),
+gain: $("#gain"),
+smooth: $("#smooth"),
+gainValue: $("#gainValue"),
+smoothValue: $("#smoothValue"),
+status: $("#status"),
+secureDiag: $("#secureDiag"),
+cameraDiag: $("#cameraDiag"),
+cvDiag: $("#cvDiag"),
+photoDiag: $("#photoDiag"),
+camDiag: $("#camDiag"),
+};
+const photoCtx = els.photoCanvas.getContext("2d");
+const camCtx = els.camCanvas.getContext("2d");
+function setStatus(msg, cls="") {
+els.status.textContent = msg;
+els.status.className = "status wide" + (cls ? " " + cls : "");
+}
+function setDiag(el, text, cls="") {
+el.textContent = text;
+el.className = cls;
+}
+function updateDiagnostics() {
+setDiag(els.secureDiag, window.isSecureContext ? "OK" : "NG", window.isSecureContext ? "good" : "bad");
+const camApi = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+setDiag(els.cameraDiag, camApi ? "利用可能" : "利用不可", camApi ? "good" : "bad");
+setDiag(els.cvDiag, state.cvReady ? "準備完了" : "読み込み中", state.cvReady ? "good" : "mid");
+els.photoDiag.textContent = `${state.photoPoints.length} / 11`;
+els.camDiag.textContent = `${state.camPoints.length} / 11`;
+}
+function nextPrompt(points) {
+if (points.length >= POINTS.length) return "11点登録完了";
+return `次: ${points.length + 1}/11 「${POINTS[points.length]}」`;
+}
+function updatePrompts() {
+els.photoPrompt.innerHTML = state.photoPoints.length >= 11
+? "<strong>写真側の11点登録が完了しました。</strong>"
+: (state.photoImg ? nextPrompt(state.photoPoints) : "写真を選択してください。");
+els.camPrompt.innerHTML = state.camPoints.length >= 11
+? "<strong>カメラ側の11点登録が完了しました。</strong>"
+: (state.stream ? nextPrompt(state.camPoints) : "カメラを開始してください。");
+}
+function updateButtons() {
+const photoReady = !!state.photoImg;
+const camReady = !!state.stream;
+const canStartTrack = photoReady && camReady && state.photoPoints.length === 11 && state.camPoints.length === 11 && state.cvReady && !state.tracking;
+if (state.tracking) {
+els.startTrackBtn.textContent = "表情リンク中";
+} else if (!photoReady) {
+els.startTrackBtn.textContent = "先に写真を選択";
+} else if (state.photoPoints.length !== 11) {
+els.startTrackBtn.textContent = `写真ポイント ${state.photoPoints.length}/11`;
+} else if (!camReady) {
+els.startTrackBtn.textContent = "カメラを開始してください";
+} else if (state.camPoints.length !== 11) {
+els.startTrackBtn.textContent = `カメラポイント ${state.camPoints.length}/11`;
+} else if (!state.cvReady) {
+els.startTrackBtn.textContent = "OpenCV準備待ち…";
+} else {
+els.startTrackBtn.textContent = "表情リンク開始";
+}
+els.photoUndo.disabled = state.photoPoints.length === 0 || state.tracking;
+els.photoReset.disabled = state.photoPoints.length === 0 || state.tracking;
+els.camUndo.disabled = state.camPoints.length === 0 || state.tracking;
+els.camReset.disabled = state.camPoints.length === 0 || state.tracking;
+[els.photoZoomIn, els.photoZoomOut, els.photoZoomReset].forEach(b => b.disabled = !photoReady || state.tracking);
+[els.camZoomIn, els.camZoomOut, els.camZoomReset].forEach(b => b.disabled = !camReady);
+els.startTrackBtn.disabled = !canStartTrack;
+els.neutralBtn.disabled = !state.tracking;
+els.stopTrackBtn.disabled = !state.tracking;
+els.stopCameraBtn.disabled = !camReady;
+els.saveBtn.disabled = !photoReady;
+updateDiagnostics();
+updatePrompts();
+}
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function resizeCanvasToStage(canvas, stage, sourceW=640, sourceH=480) {
+const dpr = window.devicePixelRatio || 1;
+const rect = stage.getBoundingClientRect();
+const w = Math.max(320, Math.floor(rect.width));
+const h = Math.max(280, Math.floor(Math.min(window.innerHeight * 0.55, Math.max(280, rect.width * 0.75))));
+canvas.width = Math.floor(w * dpr);
+canvas.height = Math.floor(h * dpr);
+canvas.style.width = w + "px";
+canvas.style.height = h + "px";
+}
+function getBaseMetrics(canvas, sourceW, sourceH) {
+const cw = canvas.width, ch = canvas.height;
+const fit = Math.min(cw / sourceW, ch / sourceH);
+const baseW = sourceW * fit;
+const baseH = sourceH * fit;
+const cx = cw / 2, cy = ch / 2;
+return { cw, ch, fit, baseW, baseH, cx, cy, sourceW, sourceH };
+}
+function sourceToCanvas(pt, metrics, view, mirrored=false) {
+const z = view.zoom;
+const x0 = mirrored ? (metrics.sourceW / 2 - pt.x) : (pt.x - metrics.sourceW / 2);
+return {
+x: metrics.cx + view.panX + x0 * metrics.fit * z,
+y: metrics.cy + view.panY + (pt.y - metrics.sourceH / 2) * metrics.fit * z
+};
+}
+function canvasToSource(pt, metrics, view, mirrored=false) {
+const xRel = (pt.x - metrics.cx - view.panX) / (metrics.fit * view.zoom);
+const yRel = (pt.y - metrics.cy - view.panY) / (metrics.fit * view.zoom);
+return {
+x: mirrored ? (metrics.sourceW / 2 - xRel) : (metrics.sourceW / 2 + xRel),
+y: metrics.sourceH / 2 + yRel
+};
+}
+function getPointerPos(ev, canvas) {
+const rect = canvas.getBoundingClientRect();
+const sx = canvas.width / rect.width;
+const sy = canvas.height / rect.height;
+return { x: (ev.clientX - rect.left) * sx, y: (ev.clientY - rect.top) * sy };
+}
+function getTouchPos(touch, canvas) {
+const rect = canvas.getBoundingClientRect();
+const sx = canvas.width / rect.width;
+const sy = canvas.height / rect.height;
+return { x: (touch.clientX - rect.left) * sx, y: (touch.clientY - rect.top) * sy };
+}
+function drawPoint(ctx, x, y, i, highlight=false) {
+ctx.save();
+ctx.beginPath();
+ctx.arc(x, y, highlight ? 10 : 8, 0, Math.PI * 2);
+ctx.fillStyle = highlight ? "#ffc56b" : "#84a5ff";
+ctx.fill();
+ctx.lineWidth = 2;
+ctx.strokeStyle = "#08101d";
+ctx.stroke();
+ctx.fillStyle = "#fff";
+ctx.font = `bold ${Math.max(13, Math.round(13 * (ctx.canvas.width / 500)))}px system-ui`;
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+ctx.fillText(String(i + 1), x, y);
+ctx.restore();
+}
+function drawCrosshair(ctx, x, y) {
+ctx.save();
+ctx.strokeStyle = "#ffef99";
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y);
+ctx.moveTo(x, y - 10); ctx.lineTo(x, y + 10);
+ctx.stroke();
+ctx.restore();
+}
+function renderPhotoBase(showPoints=true) {
+if (!state.photoImg) return;
+const canvas = els.photoCanvas;
+const ctx = photoCtx;
+const sourceW = state.photoImg.naturalWidth || state.photoImg.width;
+const sourceH = state.photoImg.naturalHeight || state.photoImg.height;
+const metrics = getBaseMetrics(canvas, sourceW, sourceH);
+ctx.setTransform(1,0,0,1,0,0);
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle = "#05070a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+const z = state.photoView.zoom;
+const dw = sourceW * metrics.fit * z;
+const dh = sourceH * metrics.fit * z;
+const dx = metrics.cx + state.photoView.panX - dw / 2;
+const dy = metrics.cy + state.photoView.panY - dh / 2;
+ctx.drawImage(state.photoImg, dx, dy, dw, dh);
+if (showPoints) {
+state.photoPoints.forEach((p, i) => {
+const cp = sourceToCanvas(p, metrics, state.photoView, false);
+drawPoint(ctx, cp.x, cp.y, i, i === state.photoPoints.length - 1);
+});
+}
+els.photoZoomBadge.textContent = Math.round(state.photoView.zoom * 100) + "%";
+}
+function renderPhotoWarp() {
+if (!state.photoImg || state.meshBase.length === 0 || state.neutralCamPoints.length !== 11 || state.smoothedCamPoints.length !== 11) {
+renderPhotoBase(true);
+return;
+}
+const canvas = els.photoCanvas;
+const ctx = photoCtx;
+const sourceW = state.photoImg.naturalWidth || state.photoImg.width;
+const sourceH = state.photoImg.naturalHeight || state.photoImg.height;
+const metrics = getBaseMetrics(canvas, sourceW, sourceH);
+ctx.setTransform(1,0,0,1,0,0);
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle = "#05070a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+const photoScale = faceScale(state.photoPoints);
+const camScale = faceScale(state.neutralCamPoints);
+const gain = Number(els.gain.value) / 100;
+const limit = photoScale * 0.35;
+const moving = state.photoPoints.map((p, i) => {
+const dx = ((state.smoothedCamPoints[i].x - state.neutralCamPoints[i].x) / camScale) * photoScale * gain;
+const dy = ((state.smoothedCamPoints[i].y - state.neutralCamPoints[i].y) / camScale) * photoScale * gain;
+return {
+x: p.x + clamp(dx, -limit, limit),
+y: p.y + clamp(dy, -limit, limit)
+};
+});
+const dest = [...moving, ...state.meshBase.slice(11).map(p => ({...p}))];
+for (const tri of state.meshTriangles) {
+const [i0,i1,i2] = tri;
+const s0 = displayFromSource(state.meshBase[i0], metrics, state.photoView, false);
+const s1 = displayFromSource(state.meshBase[i1], metrics, state.photoView, false);
+const s2 = displayFromSource(state.meshBase[i2], metrics, state.photoView, false);
+const d0 = displayFromSource(dest[i0], metrics, state.photoView, false);
+const d1 = displayFromSource(dest[i1], metrics, state.photoView, false);
+const d2 = displayFromSource(dest[i2], metrics, state.photoView, false);
+const m = affine(s0,s1,s2,d0,d1,d2);
+if (!m) continue;
+ctx.save();
+ctx.beginPath();
+ctx.moveTo(d0.x, d0.y);
+ctx.lineTo(d1.x, d1.y);
+ctx.lineTo(d2.x, d2.y);
+ctx.closePath();
+ctx.clip();
+ctx.setTransform(...m);
+const z = state.photoView.zoom;
+const dw = sourceW * metrics.fit * z;
+const dh = sourceH * metrics.fit * z;
+const dx = metrics.cx + state.photoView.panX - dw / 2;
+const dy = metrics.cy + state.photoView.panY - dh / 2;
+ctx.drawImage(state.photoImg, dx, dy, dw, dh);
+ctx.restore();
+}
+els.photoZoomBadge.textContent = Math.round(state.photoView.zoom * 100) + "%";
+}
+function renderCamBase() {
+const canvas = els.camCanvas;
+const ctx = camCtx;
+ctx.setTransform(1,0,0,1,0,0);
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle = "#05070a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+if (!state.stream || !els.video.videoWidth || !els.video.videoHeight) return;
+const sourceW = els.video.videoWidth;
+const sourceH = els.video.videoHeight;
+const metrics = getBaseMetrics(canvas, sourceW, sourceH);
+const z = state.camView.zoom;
+const dw = sourceW * metrics.fit * z;
+const dh = sourceH * metrics.fit * z;
+const dx = metrics.cx + state.camView.panX - dw / 2;
+const dy = metrics.cy + state.camView.panY - dh / 2;
+ctx.save();
+ctx.translate(metrics.cx + state.camView.panX, metrics.cy + state.camView.panY);
+ctx.scale(-metrics.fit * z, metrics.fit * z);
+ctx.drawImage(els.video, -sourceW / 2, -sourceH / 2, sourceW, sourceH);
+ctx.restore();
+const pts = state.tracking ? state.currentCamPoints : state.camPoints;
+pts.forEach((p, i) => {
+const cp = sourceToCanvas(p, metrics, state.camView, true);
+drawPoint(ctx, cp.x, cp.y, i, i === pts.length - 1);
+});
+els.camZoomBadge.textContent = Math.round(state.camView.zoom * 100) + "%";
+}
+function displayFromSource(point, metrics, view, mirrored=false) {
+return sourceToCanvas(point, metrics, view, mirrored);
+}
+function faceScale(pts) {
+if (!pts || pts.length < 4) return 1;
+const eyeL = { x:(pts[0].x + pts[1].x)/2, y:(pts[0].y + pts[1].y)/2 };
+const eyeR = { x:(pts[2].x + pts[3].x)/2, y:(pts[2].y + pts[3].y)/2 };
+return Math.max(1, Math.hypot(eyeL.x - eyeR.x, eyeL.y - eyeR.y));
+}
+function circumcircle(a,b,c) {
+const d = 2 * (a.x*(b.y-c.y) + b.x*(c.y-a.y) + c.x*(a.y-b.y));
+if (Math.abs(d) < 1e-9) return null;
+const a2 = a.x*a.x + a.y*a.y, b2 = b.x*b.x + b.y*b.y, c2 = c.x*c.x + c.y*c.y;
+const ux = (a2*(b.y-c.y) + b2*(c.y-a.y) + c2*(a.y-b.y)) / d;
+const uy = (a2*(c.x-b.x) + b2*(a.x-c.x) + c2*(b.x-a.x)) / d;
+return { x:ux, y:uy, r2:(ux-a.x)**2 + (uy-a.y)**2 };
+}
+function delaunay(points) {
+if (points.length < 3) return [];
+let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+points.forEach(p => { minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y); });
+const d = Math.max(maxX-minX, maxY-minY);
+const mx = (minX+maxX)/2, my = (minY+maxY)/2;
+const pts = points.map(p => ({...p}));
+const s0 = pts.length, s1 = s0+1, s2 = s0+2;
+pts.push({x:mx - 20*d, y:my - d}, {x:mx, y:my + 20*d}, {x:mx + 20*d, y:my - d});
+let tris = [[s0,s1,s2]];
+for (let i=0;i<points.length;i++) {
+const bad = [];
+for (let t=0;t<tris.length;t++) {
+const tri = tris[t];
+const cc = circumcircle(pts[tri[0]], pts[tri[1]], pts[tri[2]]);
+if (cc && ((pts[i].x-cc.x)**2 + (pts[i].y-cc.y)**2 <= cc.r2 + 1e-6)) bad.push(t);
+}
+const edges = [];
+for (const idx of bad) {
+const tr = tris[idx];
+[[tr[0],tr[1]],[tr[1],tr[2]],[tr[2],tr[0]]].forEach(e => {
+const rev = edges.findIndex(x => x[0]===e[1] && x[1]===e[0]);
+if (rev >= 0) edges.splice(rev, 1);
+else edges.push(e);
+});
+}
+tris = tris.filter((_, idx) => !bad.includes(idx));
+edges.forEach(e => tris.push([e[0], e[1], i]));
+}
+return tris.filter(t => t[0] < points.length && t[1] < points.length && t[2] < points.length);
+}
+function buildMesh() {
+if (state.photoPoints.length !== 11) return;
+const xs = state.photoPoints.map(p => p.x), ys = state.photoPoints.map(p => p.y);
+const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+const padX = (maxX-minX) * 0.55;
+const padY = (maxY-minY) * 0.65;
+const sourceW = state.photoImg.naturalWidth || state.photoImg.width;
+const sourceH = state.photoImg.naturalHeight || state.photoImg.height;
+const L = clamp(minX-padX, 0, sourceW);
+const R = clamp(maxX+padX, 0, sourceW);
+const T = clamp(minY-padY, 0, sourceH);
+const B = clamp(maxY+padY, 0, sourceH);
+const anchors = [
+{x:L,y:T},{x:(L+R)/2,y:T},{x:R,y:T},
+{x:L,y:(T+B)/2},{x:R,y:(T+B)/2},
+{x:L,y:B},{x:(L+R)/2,y:B},{x:R,y:B}
+];
+state.meshBase = [...state.photoPoints.map(p => ({...p})), ...anchors];
+state.meshTriangles = delaunay(state.meshBase);
+}
+function affine(s0,s1,s2,d0,d1,d2) {
+const det = s0.x*(s1.y-s2.y) + s1.x*(s2.y-s0.y) + s2.x*(s0.y-s1.y);
+if (Math.abs(det) < 1e-6) return null;
+const a = (d0.x*(s1.y-s2.y)+d1.x*(s2.y-s0.y)+d2.x*(s0.y-s1.y))/det;
+const c = (d0.x*(s2.x-s1.x)+d1.x*(s0.x-s2.x)+d2.x*(s1.x-s0.x))/det;
+const e = (d0.x*(s1.x*s2.y-s2.x*s1.y)+d1.x*(s2.x*s0.y-s0.x*s2.y)+d2.x*(s0.x*s1.y-s1.x*s0.y))/det;
+const b = (d0.y*(s1.y-s2.y)+d1.y*(s2.y-s0.y)+d2.y*(s0.y-s1.y))/det;
+const d = (d0.y*(s2.x-s1.x)+d1.y*(s0.x-s2.x)+d2.y*(s1.x-s0.x))/det;
+const f = (d0.y*(s1.x*s2.y-s2.x*s1.y)+d1.y*(s2.x*s0.y-s0.x*s2.y)+d2.y*(s0.x*s1.y-s1.x*s0.y))/det;
+return [a,b,c,d,e,f];
+}
+function setZoom(which, delta) {
+const view = which === "photo" ? state.photoView : state.camView;
+view.zoom = clamp(view.zoom + delta, 1, 5);
+if (which === "photo") renderPhotoBase(!state.tracking);
+else renderCamBase();
+}
+function resetZoom(which) {
+const view = which === "photo" ? state.photoView : state.camView;
+view.zoom = 1; view.panX = 0; view.panY = 0;
+if (which === "photo") renderPhotoBase(!state.tracking);
+else renderCamBase();
+}
+function createSurfaceInteraction({canvas, stage, type, pointsRef, viewRef, sourceSize, mirrored, loupeEl, onPlaced}) {
+const loupeCanvas = loupeEl.querySelector("canvas");
+const loupeCtx = loupeCanvas.getContext("2d");
+let dragging = false;
+let dragStart = null;
+let panStart = null;
+let holdTimer = null;
+let loupeActive = false;
+let lastPos = null;
+let moved = false;
+function getMetrics() {
+const [sw, sh] = sourceSize();
+return getBaseMetrics(canvas, sw, sh);
+}
+function canPlace() {
+return !state.tracking && pointsRef().length < 11;
+}
+function drawLoupe(canvasPos) {
+const [sw, sh] = sourceSize();
+const metrics = getBaseMetrics(canvas, sw, sh);
+const srcPos = canvasToSource(canvasPos, metrics, viewRef(), mirrored());
+const ctx = (type === "photo") ? photoCtx : camCtx;
+loupeCanvas.width = 120;
+loupeCanvas.height = 120;
+loupeCtx.setTransform(1,0,0,1,0,0);
+loupeCtx.clearRect(0,0,120,120);
+loupeCtx.fillStyle = "#000";
+loupeCtx.fillRect(0,0,120,120);
+loupeCtx.save();
+loupeCtx.beginPath();
+loupeCtx.arc(60,60,60,0,Math.PI*2);
+loupeCtx.clip();
+loupeCtx.drawImage(canvas, srcPos.x ? 0 : 0, 0); // dummy call not used
+loupeCtx.restore();
+const region = 28;
+loupeCtx.save();
+loupeCtx.beginPath();
+loupeCtx.arc(60,60,60,0,Math.PI*2);
+loupeCtx.clip();
+loupeCtx.drawImage(
+canvas,
+canvasPos.x - region, canvasPos.y - region, region * 2, region * 2,
+0, 0, 120, 120
+);
+loupeCtx.restore();
+drawCrosshair(loupeCtx, 60, 60);
+const rect = stage.getBoundingClientRect();
+const scaleX = rect.width / canvas.width;
+const scaleY = rect.height / canvas.height;
+const leftPx = (canvasPos.x * scaleX) - 60;
+const topPx = (canvasPos.y * scaleY) - 130;
+loupeEl.style.left = clamp(leftPx, 6, rect.width - 126) + "px";
+loupeEl.style.top = clamp(topPx, 6, rect.height - 126) + "px";
+loupeEl.style.display = "block";
+}
+function hideLoupe() {
+loupeActive = false;
+loupeEl.style.display = "none";
+}
+function placeFromCanvasPos(canvasPos) {
+const [sw, sh] = sourceSize();
+const metrics = getBaseMetrics(canvas, sw, sh);
+const src = canvasToSource(canvasPos, metrics, viewRef(), mirrored());
+const point = { x: clamp(src.x, 0, sw), y: clamp(src.y, 0, sh) };
+onPlaced(point);
+}
+function startHold(canvasPos) {
+if (!canPlace()) return;
+holdTimer = setTimeout(() => {
+loupeActive = true;
+drawLoupe(canvasPos);
+}, 160);
+}
+function clearHold() {
+if (holdTimer) clearTimeout(holdTimer);
+holdTimer = null;
+}
+stage.addEventListener("pointerdown", (e) => {
+if (e.pointerType === "mouse" && e.button !== 0) return;
+if ((type === "photo" && !state.photoImg) || (type === "cam" && !state.stream)) return;
+canvas.setPointerCapture(e.pointerId);
+dragging = true;
+moved = false;
+const pos = getPointerPos(e, canvas);
+lastPos = pos;
+dragStart = pos;
+panStart = { x:viewRef().panX, y:viewRef().panY };
+startHold(pos);
+e.preventDefault();
+});
+stage.addEventListener("pointermove", (e) => {
+if (!dragging) return;
+const pos = getPointerPos(e, canvas);
+const dx = pos.x - dragStart.x;
+const dy = pos.y - dragStart.y;
+if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+lastPos = pos;
+if (loupeActive) {
+drawLoupe(pos);
+} else if (moved && !state.tracking) {
+clearHold();
+viewRef().panX = panStart.x + dx;
+viewRef().panY = panStart.y + dy;
+if (type === "photo") renderPhotoBase(true);
+else renderCamBase();
+}
+e.preventDefault();
+});
+stage.addEventListener("pointerup", (e) => {
+if (!dragging) return;
+dragging = false;
+clearHold();
+if (loupeActive) {
+placeFromCanvasPos(lastPos || getPointerPos(e, canvas));
+hideLoupe();
+} else if (!moved && e.pointerType === "mouse" && canPlace()) {
+placeFromCanvasPos(getPointerPos(e, canvas));
+}
+e.preventDefault();
+});
+stage.addEventListener("pointercancel", () => {
+dragging = false;
+clearHold();
+hideLoupe();
+});
+}
+function handlePhotoPlaced(point) {
+if (state.photoPoints.length >= 11 || state.tracking) return;
+state.photoPoints.push(point);
+if (state.photoPoints.length === 11) buildMesh();
+renderPhotoBase(true);
+updateButtons();
+if (state.photoPoints.length === 11) setStatus("写真側の11点登録が完了しました。次にカメラ側の11点を登録してください。", "ok");
+}
+function handleCamPlaced(point) {
+if (state.camPoints.length >= 11 || state.tracking) return;
+state.camPoints.push(point);
+renderCamBase();
+updateButtons();
+if (state.camPoints.length === 11) setStatus("カメラ側の11点登録が完了しました。「表情リンク開始」を押してください。", "ok");
+}
+async function loadPhoto(file) {
+const url = URL.createObjectURL(file);
+const img = new Image();
+img.onload = () => {
+state.photoImg = img;
+els.photoPlaceholder.classList.add("hidden");
+els.photoCanvas.classList.remove("hidden");
+els.photoZoomBadge.classList.remove("hidden");
+resizeCanvasToStage(els.photoCanvas, els.photoStage, img.naturalWidth, img.naturalHeight);
+state.photoPoints = [];
+state.photoView = {zoom:1, panX:0, panY:0};
+buildMesh();
+renderPhotoBase(true);
+updateButtons();
+setStatus("写真を読み込みました。11点を順番に登録してください。", "ok");
+URL.revokeObjectURL(url);
+};
+img.onerror = () => setStatus("画像を読み込めませんでした。JPEG/PNG/WebPを試してください。", "bad");
+img.src = url;
+}
+async function startCamera() {
+if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+setStatus("この環境ではカメラAPIが使えません。GitHub PagesなどHTTPS環境で開いてください。", "bad");
+return;
+}
+try {
+state.stream = await navigator.mediaDevices.getUserMedia({
+video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480} },
+audio:false
+});
+els.video.srcObject = state.stream;
+await els.video.play();
+els.camPlaceholder.classList.add("hidden");
+els.camCanvas.classList.remove("hidden");
+els.camZoomBadge.classList.remove("hidden");
+resizeCanvasToStage(els.camCanvas, els.camStage, els.video.videoWidth || 640, els.video.videoHeight || 480);
+state.camPoints = [];
+state.camView = {zoom:1, panX:0, panY:0};
+renderCamBase();
+updateButtons();
+setStatus("カメラを開始しました。画面の自分の顔に11点を順番に登録してください。", "ok");
+} catch (e) {
+console.error(e);
+if (e && e.name === "NotAllowedError") {
+setStatus("カメラ権限が拒否されています。ブラウザ設定でカメラを許可してください。", "bad");
+} else {
+setStatus("カメラを開始できませんでした。HTTPS接続か、ブラウザのカメラ権限を確認してください。", "bad");
+}
+}
+}
+function stopCamera() {
+stopTracking();
+if (state.stream) {
+state.stream.getTracks().forEach(t => t.stop());
+state.stream = null;
+}
+els.video.srcObject = null;
+state.camPoints = [];
+els.camCanvas.classList.add("hidden");
+els.camZoomBadge.classList.add("hidden");
+els.camPlaceholder.classList.remove("hidden");
+updateButtons();
+setStatus("カメラを停止しました。", "ok");
+}
+function cleanupCV() {
+[state.cap, state.frameRGBA, state.gray, state.prevGray, state.prevPts, state.nextPts, state.statusMat, state.errMat].forEach(m => {
+try { if (m && m.delete) m.delete(); } catch {}
+});
+state.cap = state.frameRGBA = state.gray = state.prevGray = state.prevPts = state.nextPts = state.statusMat = state.errMat = null;
+}
+function initTracking() {
+cleanupCV();
+const w = els.video.videoWidth, h = els.video.videoHeight;
+state.cap = new cv.VideoCapture(els.video);
+state.frameRGBA = new cv.Mat(h, w, cv.CV_8UC4);
+state.gray = new cv.Mat(h, w, cv.CV_8UC1);
+state.prevGray = new cv.Mat(h, w, cv.CV_8UC1);
+state.prevPts = cv.matFromArray(11, 1, cv.CV_32FC2, state.camPoints.flatMap(p => [p.x, p.y]));
+state.nextPts = new cv.Mat();
+state.statusMat = new cv.Mat();
+state.errMat = new cv.Mat();
+state.cap.read(state.frameRGBA);
+cv.cvtColor(state.frameRGBA, state.prevGray, cv.COLOR_RGBA2GRAY);
+state.currentCamPoints = state.camPoints.map(p => ({...p}));
+state.smoothedCamPoints = state.camPoints.map(p => ({...p}));
+state.neutralCamPoints = state.camPoints.map(p => ({...p}));
+}
+function startTracking() {
+if (!state.cvReady || !state.stream || state.photoPoints.length !== 11 || state.camPoints.length !== 11) return;
+buildMesh();
+initTracking();
+state.tracking = true;
+updateButtons();
+setStatus("表情リンク中です。大きく顔を動かしすぎると追跡が外れることがあります。まずは目・口・眉の変化を中心に試してください。", "ok");
+trackLoop();
+}
+function stopTracking() {
+state.tracking = false;
+cancelAnimationFrame(state.trackRaf);
+cleanupCV();
+if (state.photoImg) renderPhotoBase(true);
+if (state.stream) renderCamBase();
+updateButtons();
+}
+function trackLoop() {
+if (!state.tracking) return;
+try {
+state.cap.read(state.frameRGBA);
+cv.cvtColor(state.frameRGBA, state.gray, cv.COLOR_RGBA2GRAY);
+const winSize = new cv.Size(21,21);
+const criteria = new cv.TermCriteria(cv.TermCriteria_COUNT | cv.TermCriteria_EPS, 20, 0.03);
+cv.calcOpticalFlowPyrLK(state.prevGray, state.gray, state.prevPts, state.nextPts, state.statusMat, state.errMat, winSize, 3, criteria, 0, 0.001);
+const raw = [];
+for (let i=0; i<11; i++) {
+const ok = state.statusMat.data[i] === 1;
+const x = state.nextPts.data32F[i*2];
+const y = state.nextPts.data32F[i*2+1];
+raw.push(ok ? {x,y} : state.currentCamPoints[i]);
+}
+state.currentCamPoints = raw;
+const alpha = Math.max(0.08, 1 - Number(els.smooth.value) / 100);
+state.smoothedCamPoints = state.smoothedCamPoints.map((p, i) => ({
+x: p.x + (state.currentCamPoints[i].x - p.x) * alpha,
+y: p.y + (state.currentCamPoints[i].y - p.y) * alpha
+}));
+renderPhotoWarp();
+renderCamBase();
+state.gray.copyTo(state.prevGray);
+state.nextPts.copyTo(state.prevPts);
+} catch (e) {
+console.error(e);
+stopTracking();
+setStatus("追跡中にエラーが発生しました。ポイントを再設定してやり直してください。", "bad");
+return;
+}
+state.trackRaf = requestAnimationFrame(trackLoop);
+}
+function startUiLoop() {
+cancelAnimationFrame(state.uiRaf);
+function frame() {
+if (state.stream && !state.tracking) renderCamBase();
+state.uiRaf = requestAnimationFrame(frame);
+}
+frame();
+}
+function savePhoto() {
+if (!state.photoImg) return;
+const a = document.createElement("a");
+a.download = "face-link-result.png";
+a.href = els.photoCanvas.toDataURL("image/png");
+a.click();
+}
+function initEvents() {
+els.photoInput.addEventListener("change", () => {
+const file = els.photoInput.files?.[0];
+if (file) loadPhoto(file);
+});
+els.cameraBtn.addEventListener("click", startCamera);
+els.stopCameraBtn.addEventListener("click", stopCamera);
+els.startTrackBtn.addEventListener("click", startTracking);
+els.stopTrackBtn.addEventListener("click", () => { stopTracking(); setStatus("追跡を停止しました。", "ok"); });
+els.neutralBtn.addEventListener("click", () => {
+if (!state.tracking) return;
+state.neutralCamPoints = state.smoothedCamPoints.map(p => ({...p}));
+setStatus("現在の表情を基準に設定しました。", "ok");
+});
+els.saveBtn.addEventListener("click", savePhoto);
+els.photoUndo.addEventListener("click", () => {
+if (state.photoPoints.length) state.photoPoints.pop();
+renderPhotoBase(true); updateButtons();
+});
+els.photoReset.addEventListener("click", () => {
+state.photoPoints = [];
+renderPhotoBase(true); updateButtons();
+});
+els.camUndo.addEventListener("click", () => {
+if (state.camPoints.length) state.camPoints.pop();
+renderCamBase(); updateButtons();
+});
+els.camReset.addEventListener("click", () => {
+state.camPoints = [];
+renderCamBase(); updateButtons();
+});
+els.photoZoomIn.addEventListener("click", () => setZoom("photo", 0.25));
+els.photoZoomOut.addEventListener("click", () => setZoom("photo", -0.25));
+els.photoZoomReset.addEventListener("click", () => resetZoom("photo"));
+els.camZoomIn.addEventListener("click", () => setZoom("cam", 0.25));
+els.camZoomOut.addEventListener("click", () => setZoom("cam", -0.25));
+els.camZoomReset.addEventListener("click", () => resetZoom("cam"));
+els.gain.addEventListener("input", () => {
+els.gainValue.textContent = els.gain.value + "%";
+if (state.tracking) renderPhotoWarp();
+});
+els.smooth.addEventListener("input", () => {
+els.smoothValue.textContent = els.smooth.value + "%";
+});
+window.addEventListener("resize", () => {
+if (state.photoImg) {
+resizeCanvasToStage(els.photoCanvas, els.photoStage, state.photoImg.naturalWidth, state.photoImg.naturalHeight);
+state.tracking ? renderPhotoWarp() : renderPhotoBase(true);
+}
+if (state.stream) {
+resizeCanvasToStage(els.camCanvas, els.camStage, els.video.videoWidth || 640, els.video.videoHeight || 480);
+renderCamBase();
+}
+});
+window.addEventListener("pagehide", () => {
+stopCamera();
+cancelAnimationFrame(state.uiRaf);
+});
+createSurfaceInteraction({
+canvas: els.photoCanvas,
+stage: els.photoStage,
+type: "photo",
+pointsRef: () => state.photoPoints,
+viewRef: () => state.photoView,
+sourceSize: () => state.photoImg ? [state.photoImg.naturalWidth || state.photoImg.width, state.photoImg.naturalHeight || state.photoImg.height] : [1,1],
+mirrored: () => false,
+loupeEl: els.photoLoupe,
+onPlaced: handlePhotoPlaced,
+});
+createSurfaceInteraction({
+canvas: els.camCanvas,
+stage: els.camStage,
+type: "cam",
+pointsRef: () => state.camPoints,
+viewRef: () => state.camView,
+sourceSize: () => [els.video.videoWidth || 1, els.video.videoHeight || 1],
+mirrored: () => true,
+loupeEl: els.camLoupe,
+onPlaced: handleCamPlaced,
+});
+}
+function markCvReady() {
+if (state.cvReady) return true;
+try {
+if (window.cv && typeof window.cv.Mat === "function" && typeof window.cv.calcOpticalFlowPyrLK === "function") {
+state.cvReady = true;
+updateButtons();
+setStatus("OpenCV.jsの準備が完了しました。11点ずつ登録すると表情リンクを開始できます。", "ok");
+return true;
+}
+} catch (_) {}
+return false;
+}
+window.Module = window.Module || {};
+window.Module.onRuntimeInitialized = () => { markCvReady(); };
+let cvPollCount = 0;
+const cvPoll = setInterval(async () => {
+cvPollCount++;
+if (markCvReady()) { clearInterval(cvPoll); return; }
+try {
+if (window.cv && typeof window.cv.then === "function") {
+const resolved = await window.cv;
+if (resolved) window.cv = resolved;
+if (markCvReady()) { clearInterval(cvPoll); return; }
+}
+} catch (_) {}
+updateButtons();
+if (cvPollCount > 120) {
+clearInterval(cvPoll);
+if (!state.cvReady) setStatus("OpenCV.jsの初期化に時間がかかっています。ページを再読み込みしてください。", "warn");
+}
+}, 250);
+updateDiagnostics();
+updateButtons();
+setStatus("OpenCV.jsを読み込んでいます。読み込み前でも写真選択はできます。");
+initEvents();
+startUiLoop();
+</script>
+<script async src="https://docs.opencv.org/4.x/opencv.js" onerror="document.getElementById('cvDiag').textContent='読み込み失敗';document.getElementById('cvDiag').className='bad';document.getElementById('status').textContent='OpenCV.jsを読み込めませんでした。通信環境を確認して再読み込みしてください。';document.getElementById('status').className='status wide bad';"></script>
+</body>
+</html>
