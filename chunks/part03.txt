@@ -1,0 +1,134 @@
+oints.length === 11 && state.camPoints.length === 11 && state.cvReady && !state.tracking;
+if (state.tracking) {
+els.startTrackBtn.textContent = "表情リンク中";
+} else if (!photoReady) {
+els.startTrackBtn.textContent = "先に写真を選択";
+} else if (state.photoPoints.length !== 11) {
+els.startTrackBtn.textContent = `写真ポイント ${state.photoPoints.length}/11`;
+} else if (!camReady) {
+els.startTrackBtn.textContent = "カメラを開始してください";
+} else if (state.camPoints.length !== 11) {
+els.startTrackBtn.textContent = `カメラポイント ${state.camPoints.length}/11`;
+} else if (!state.cvReady) {
+els.startTrackBtn.textContent = "OpenCV準備待ち…";
+} else {
+els.startTrackBtn.textContent = "表情リンク開始";
+}
+els.photoUndo.disabled = state.photoPoints.length === 0 || state.tracking;
+els.photoReset.disabled = state.photoPoints.length === 0 || state.tracking;
+els.camUndo.disabled = state.camPoints.length === 0 || state.tracking;
+els.camReset.disabled = state.camPoints.length === 0 || state.tracking;
+[els.photoZoomIn, els.photoZoomOut, els.photoZoomReset].forEach(b => b.disabled = !photoReady || state.tracking);
+[els.camZoomIn, els.camZoomOut, els.camZoomReset].forEach(b => b.disabled = !camReady);
+els.startTrackBtn.disabled = !canStartTrack;
+els.neutralBtn.disabled = !state.tracking;
+els.stopTrackBtn.disabled = !state.tracking;
+els.stopCameraBtn.disabled = !camReady;
+els.saveBtn.disabled = !photoReady;
+updateDiagnostics();
+updatePrompts();
+}
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function resizeCanvasToStage(canvas, stage, sourceW=640, sourceH=480) {
+const dpr = window.devicePixelRatio || 1;
+const rect = stage.getBoundingClientRect();
+const w = Math.max(320, Math.floor(rect.width));
+const h = Math.max(280, Math.floor(Math.min(window.innerHeight * 0.55, Math.max(280, rect.width * 0.75))));
+canvas.width = Math.floor(w * dpr);
+canvas.height = Math.floor(h * dpr);
+canvas.style.width = w + "px";
+canvas.style.height = h + "px";
+}
+function getBaseMetrics(canvas, sourceW, sourceH) {
+const cw = canvas.width, ch = canvas.height;
+const fit = Math.min(cw / sourceW, ch / sourceH);
+const baseW = sourceW * fit;
+const baseH = sourceH * fit;
+const cx = cw / 2, cy = ch / 2;
+return { cw, ch, fit, baseW, baseH, cx, cy, sourceW, sourceH };
+}
+function sourceToCanvas(pt, metrics, view, mirrored=false) {
+const z = view.zoom;
+const x0 = mirrored ? (metrics.sourceW / 2 - pt.x) : (pt.x - metrics.sourceW / 2);
+return {
+x: metrics.cx + view.panX + x0 * metrics.fit * z,
+y: metrics.cy + view.panY + (pt.y - metrics.sourceH / 2) * metrics.fit * z
+};
+}
+function canvasToSource(pt, metrics, view, mirrored=false) {
+const xRel = (pt.x - metrics.cx - view.panX) / (metrics.fit * view.zoom);
+const yRel = (pt.y - metrics.cy - view.panY) / (metrics.fit * view.zoom);
+return {
+x: mirrored ? (metrics.sourceW / 2 - xRel) : (metrics.sourceW / 2 + xRel),
+y: metrics.sourceH / 2 + yRel
+};
+}
+function getPointerPos(ev, canvas) {
+const rect = canvas.getBoundingClientRect();
+const sx = canvas.width / rect.width;
+const sy = canvas.height / rect.height;
+return { x: (ev.clientX - rect.left) * sx, y: (ev.clientY - rect.top) * sy };
+}
+function getTouchPos(touch, canvas) {
+const rect = canvas.getBoundingClientRect();
+const sx = canvas.width / rect.width;
+const sy = canvas.height / rect.height;
+return { x: (touch.clientX - rect.left) * sx, y: (touch.clientY - rect.top) * sy };
+}
+function drawPoint(ctx, x, y, i, highlight=false) {
+ctx.save();
+ctx.beginPath();
+ctx.arc(x, y, highlight ? 10 : 8, 0, Math.PI * 2);
+ctx.fillStyle = highlight ? "#ffc56b" : "#84a5ff";
+ctx.fill();
+ctx.lineWidth = 2;
+ctx.strokeStyle = "#08101d";
+ctx.stroke();
+ctx.fillStyle = "#fff";
+ctx.font = `bold ${Math.max(13, Math.round(13 * (ctx.canvas.width / 500)))}px system-ui`;
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+ctx.fillText(String(i + 1), x, y);
+ctx.restore();
+}
+function drawCrosshair(ctx, x, y) {
+ctx.save();
+ctx.strokeStyle = "#ffef99";
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y);
+ctx.moveTo(x, y - 10); ctx.lineTo(x, y + 10);
+ctx.stroke();
+ctx.restore();
+}
+function renderPhotoBase(showPoints=true) {
+if (!state.photoImg) return;
+const canvas = els.photoCanvas;
+const ctx = photoCtx;
+const sourceW = state.photoImg.naturalWidth || state.photoImg.width;
+const sourceH = state.photoImg.naturalHeight || state.photoImg.height;
+const metrics = getBaseMetrics(canvas, sourceW, sourceH);
+ctx.setTransform(1,0,0,1,0,0);
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle = "#05070a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+const z = state.photoView.zoom;
+const dw = sourceW * metrics.fit * z;
+const dh = sourceH * metrics.fit * z;
+const dx = metrics.cx + state.photoView.panX - dw / 2;
+const dy = metrics.cy + state.photoView.panY - dh / 2;
+ctx.drawImage(state.photoImg, dx, dy, dw, dh);
+if (showPoints) {
+state.photoPoints.forEach((p, i) => {
+const cp = sourceToCanvas(p, metrics, state.photoView, false);
+drawPoint(ctx, cp.x, cp.y, i, i === state.photoPoints.length - 1);
+});
+}
+els.photoZoomBadge.textContent = Math.round(state.photoView.zoom * 100) + "%";
+}
+function renderPhotoWarp() {
+if (!state.photoImg || state.meshBase.length === 0 || state.neutralCamPoints.length !== 11 || state.smoothedCamPoints.length !== 11) {
+renderPhotoBase(true);
+return;
+}
+co
