@@ -1,0 +1,153 @@
+umber(els.smooth.value) / 100);
+state.smoothedCamPoints = state.smoothedCamPoints.map((p, i) => ({
+x: p.x + (state.currentCamPoints[i].x - p.x) * alpha,
+y: p.y + (state.currentCamPoints[i].y - p.y) * alpha
+}));
+renderPhotoWarp();
+renderCamBase();
+state.gray.copyTo(state.prevGray);
+state.nextPts.copyTo(state.prevPts);
+} catch (e) {
+console.error(e);
+stopTracking();
+setStatus("追跡中にエラーが発生しました。ポイントを再設定してやり直してください。", "bad");
+return;
+}
+state.trackRaf = requestAnimationFrame(trackLoop);
+}
+function startUiLoop() {
+cancelAnimationFrame(state.uiRaf);
+function frame() {
+if (state.stream && !state.tracking) renderCamBase();
+state.uiRaf = requestAnimationFrame(frame);
+}
+frame();
+}
+function savePhoto() {
+if (!state.photoImg) return;
+const a = document.createElement("a");
+a.download = "face-link-result.png";
+a.href = els.photoCanvas.toDataURL("image/png");
+a.click();
+}
+function initEvents() {
+els.photoInput.addEventListener("change", () => {
+const file = els.photoInput.files?.[0];
+if (file) loadPhoto(file);
+});
+els.cameraBtn.addEventListener("click", startCamera);
+els.stopCameraBtn.addEventListener("click", stopCamera);
+els.startTrackBtn.addEventListener("click", startTracking);
+els.stopTrackBtn.addEventListener("click", () => { stopTracking(); setStatus("追跡を停止しました。", "ok"); });
+els.neutralBtn.addEventListener("click", () => {
+if (!state.tracking) return;
+state.neutralCamPoints = state.smoothedCamPoints.map(p => ({...p}));
+setStatus("現在の表情を基準に設定しました。", "ok");
+});
+els.saveBtn.addEventListener("click", savePhoto);
+els.photoUndo.addEventListener("click", () => {
+if (state.photoPoints.length) state.photoPoints.pop();
+renderPhotoBase(true); updateButtons();
+});
+els.photoReset.addEventListener("click", () => {
+state.photoPoints = [];
+renderPhotoBase(true); updateButtons();
+});
+els.camUndo.addEventListener("click", () => {
+if (state.camPoints.length) state.camPoints.pop();
+renderCamBase(); updateButtons();
+});
+els.camReset.addEventListener("click", () => {
+state.camPoints = [];
+renderCamBase(); updateButtons();
+});
+els.photoZoomIn.addEventListener("click", () => setZoom("photo", 0.25));
+els.photoZoomOut.addEventListener("click", () => setZoom("photo", -0.25));
+els.photoZoomReset.addEventListener("click", () => resetZoom("photo"));
+els.camZoomIn.addEventListener("click", () => setZoom("cam", 0.25));
+els.camZoomOut.addEventListener("click", () => setZoom("cam", -0.25));
+els.camZoomReset.addEventListener("click", () => resetZoom("cam"));
+els.gain.addEventListener("input", () => {
+els.gainValue.textContent = els.gain.value + "%";
+if (state.tracking) renderPhotoWarp();
+});
+els.smooth.addEventListener("input", () => {
+els.smoothValue.textContent = els.smooth.value + "%";
+});
+window.addEventListener("resize", () => {
+if (state.photoImg) {
+resizeCanvasToStage(els.photoCanvas, els.photoStage, state.photoImg.naturalWidth, state.photoImg.naturalHeight);
+state.tracking ? renderPhotoWarp() : renderPhotoBase(true);
+}
+if (state.stream) {
+resizeCanvasToStage(els.camCanvas, els.camStage, els.video.videoWidth || 640, els.video.videoHeight || 480);
+renderCamBase();
+}
+});
+window.addEventListener("pagehide", () => {
+stopCamera();
+cancelAnimationFrame(state.uiRaf);
+});
+createSurfaceInteraction({
+canvas: els.photoCanvas,
+stage: els.photoStage,
+type: "photo",
+pointsRef: () => state.photoPoints,
+viewRef: () => state.photoView,
+sourceSize: () => state.photoImg ? [state.photoImg.naturalWidth || state.photoImg.width, state.photoImg.naturalHeight || state.photoImg.height] : [1,1],
+mirrored: () => false,
+loupeEl: els.photoLoupe,
+onPlaced: handlePhotoPlaced,
+});
+createSurfaceInteraction({
+canvas: els.camCanvas,
+stage: els.camStage,
+type: "cam",
+pointsRef: () => state.camPoints,
+viewRef: () => state.camView,
+sourceSize: () => [els.video.videoWidth || 1, els.video.videoHeight || 1],
+mirrored: () => true,
+loupeEl: els.camLoupe,
+onPlaced: handleCamPlaced,
+});
+}
+function markCvReady() {
+if (state.cvReady) return true;
+try {
+if (window.cv && typeof window.cv.Mat === "function" && typeof window.cv.calcOpticalFlowPyrLK === "function") {
+state.cvReady = true;
+updateButtons();
+setStatus("OpenCV.jsの準備が完了しました。11点ずつ登録すると表情リンクを開始できます。", "ok");
+return true;
+}
+} catch (_) {}
+return false;
+}
+window.Module = window.Module || {};
+window.Module.onRuntimeInitialized = () => { markCvReady(); };
+let cvPollCount = 0;
+const cvPoll = setInterval(async () => {
+cvPollCount++;
+if (markCvReady()) { clearInterval(cvPoll); return; }
+try {
+if (window.cv && typeof window.cv.then === "function") {
+const resolved = await window.cv;
+if (resolved) window.cv = resolved;
+if (markCvReady()) { clearInterval(cvPoll); return; }
+}
+} catch (_) {}
+updateButtons();
+if (cvPollCount > 120) {
+clearInterval(cvPoll);
+if (!state.cvReady) setStatus("OpenCV.jsの初期化に時間がかかっています。ページを再読み込みしてください。", "warn");
+}
+}, 250);
+updateDiagnostics();
+updateButtons();
+setStatus("OpenCV.jsを読み込んでいます。読み込み前でも写真選択はできます。");
+initEvents();
+startUiLoop();
+</script>
+<script async src="https://docs.opencv.org/4.x/opencv.js" onerror="document.getElementById('cvDiag').textContent='読み込み失敗';document.getElementById('cvDiag').className='bad';document.getElementById('status').textContent='OpenCV.jsを読み込めませんでした。通信環境を確認して再読み込みしてください。';document.getElementById('status').className='status wide bad';"></script>
+</body>
+</html>
