@@ -1,4 +1,4 @@
-name: Unpack Face Link HTML
+name: Build Plain Face Link HTML
 
 on:
   push:
@@ -9,35 +9,38 @@ permissions:
   contents: write
 
 jobs:
-  unpack:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack embedded HTML
+      - name: Convert embedded compressed app to plain index.html
         run: |
           python - <<'PY'
           from pathlib import Path
           import re, base64, gzip
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
+
+          src = Path('compressed.html')
+          if not src.exists():
+              raise SystemExit('compressed.html not found')
+
+          s = src.read_text(encoding='utf-8')
           m = re.search(r'atob\("([A-Za-z0-9+/=]+)"\)', s)
           if not m:
-              print('index.html is already plain HTML')
-              raise SystemExit(0)
-          html = gzip.decompress(base64.b64decode(m.group(1))).decode('utf-8')
-          p.write_text(html, encoding='utf-8')
-          print('Unpacked index.html:', len(html), 'bytes')
+              raise SystemExit('embedded gzip payload not found')
+
+          raw = base64.b64decode(m.group(1))
+          html = gzip.decompress(raw).decode('utf-8')
+          Path('index.html').write_text(html, encoding='utf-8')
+          print('Wrote plain index.html:', len(html), 'bytes')
           PY
-      - name: Commit unpacked HTML
+      - name: Commit plain index.html
         run: |
           if git diff --quiet -- index.html; then
-            echo "No changes"
+            echo "index.html already plain and current"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Replace compressed loader with plain HTML"
+          git commit -m "Deploy plain Face Link HTML"
           git push
-
-# trigger unpack
