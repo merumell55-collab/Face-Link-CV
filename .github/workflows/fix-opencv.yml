@@ -1,0 +1,131 @@
+name: Fix OpenCV mobile loading
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-opencv.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vendor pinned OpenCV.js
+        run: |
+          curl -L --fail --retry 3 \
+            'https://unpkg.com/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js' \
+            -o opencv.js
+          test $(wc -c < opencv.js) -gt 5000000
+          echo "opencv.js bytes: $(wc -c < opencv.js)"
+
+      - name: Patch index.html for robust mobile initialization
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          start = s.index('function markCvReady() {')
+          end = s.index('</body>\n</html>', start)
+
+          new = r'''function markCvReady(candidate = null) {
+            if (state.cvReady) return true;
+            try {
+              const c = candidate || window.cv;
+              if (c && typeof c.Mat === "function" && typeof c.calcOpticalFlowPyrLK === "function") {
+                window.cv = c;
+                state.cvReady = true;
+                setDiag(els.cvDiag, "準備完了", "good");
+                updateButtons();
+                setStatus("OpenCV.jsの準備が完了しました。11点ずつ登録すると表情リンクを開始できます。", "ok");
+                return true;
+              }
+            } catch (_) {}
+            return false;
+          }
+
+          async function resolveOpenCv() {
+            try {
+              setDiag(els.cvDiag, "初期化中", "mid");
+              let candidate = null;
+              if (typeof cv !== "undefined") candidate = cv;
+              else if (window.cv) candidate = window.cv;
+              if (!candidate) return false;
+              if (typeof candidate.then === "function") candidate = await candidate;
+              if (markCvReady(candidate)) return true;
+              if (candidate && !candidate.Mat) {
+                const previous = candidate.onRuntimeInitialized;
+                candidate.onRuntimeInitialized = () => {
+                  try { if (typeof previous === "function") previous(); } catch (_) {}
+                  markCvReady(candidate);
+                };
+              }
+            } catch (e) {
+              console.error("OpenCV init error", e);
+              setDiag(els.cvDiag, "初期化失敗", "bad");
+              setStatus("OpenCV.jsの初期化に失敗しました: " + (e?.message || String(e)), "bad");
+            }
+            return false;
+          }
+
+          async function onOpenCvScriptLoaded() {
+            setDiag(els.cvDiag, "初期化中", "mid");
+            await resolveOpenCv();
+          }
+
+          function onOpenCvScriptError() {
+            setDiag(els.cvDiag, "読み込み失敗", "bad");
+            setStatus("OpenCV.jsを読み込めませんでした。ページを再読み込みしてください。", "bad");
+          }
+
+          window.Module = window.Module || {};
+          const previousModuleInit = window.Module.onRuntimeInitialized;
+          window.Module.onRuntimeInitialized = () => {
+            try { if (typeof previousModuleInit === "function") previousModuleInit(); } catch (_) {}
+            resolveOpenCv();
+          };
+
+          let cvPollCount = 0;
+          const cvPoll = setInterval(async () => {
+            cvPollCount++;
+            if (state.cvReady) { clearInterval(cvPoll); return; }
+            const ok = await resolveOpenCv();
+            if (ok || state.cvReady) { clearInterval(cvPoll); return; }
+            updateButtons();
+            if (cvPollCount >= 80) {
+              clearInterval(cvPoll);
+              if (!state.cvReady) {
+                setDiag(els.cvDiag, "初期化タイムアウト", "bad");
+                setStatus("OpenCV.jsの初期化が完了しませんでした。再読み込みしてください。", "bad");
+              }
+            }
+          }, 250);
+
+          updateDiagnostics();
+          updateButtons();
+          setStatus("OpenCV.jsを読み込んでいます。読み込み前でも写真選択はできます。");
+          initEvents();
+          startUiLoop();
+          </script>
+          <script async src="./opencv.js?v=4101" onload="onOpenCvScriptLoaded()" onerror="onOpenCvScriptError()"></script>
+          '''
+
+          p.write_text(s[:start] + new + '</body>\n</html>', encoding='utf-8')
+          PY
+
+      - name: Commit fixed app and local OpenCV
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html opencv.js
+          if git diff --cached --quiet; then
+            echo 'No changes'
+          else
+            git commit -m 'Fix OpenCV mobile initialization and vendor 4.10.0'
+            git push
+          fi
