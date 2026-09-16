@@ -1043,43 +1043,85 @@ loupeEl: els.camLoupe,
 onPlaced: handleCamPlaced,
 });
 }
-function markCvReady() {
-if (state.cvReady) return true;
-try {
-if (window.cv && typeof window.cv.Mat === "function" && typeof window.cv.calcOpticalFlowPyrLK === "function") {
-state.cvReady = true;
-updateButtons();
-setStatus("OpenCV.jsの準備が完了しました。11点ずつ登録すると表情リンクを開始できます。", "ok");
-return true;
+function markCvReady(candidate = null) {
+  if (state.cvReady) return true;
+  try {
+    const c = candidate || window.cv;
+    if (c && typeof c.Mat === "function" && typeof c.calcOpticalFlowPyrLK === "function") {
+      window.cv = c;
+      state.cvReady = true;
+      setDiag(els.cvDiag, "準備完了", "good");
+      updateButtons();
+      setStatus("OpenCV.jsの準備が完了しました。11点ずつ登録すると表情リンクを開始できます。", "ok");
+      return true;
+    }
+  } catch (_) {}
+  return false;
 }
-} catch (_) {}
-return false;
+
+async function resolveOpenCv() {
+  try {
+    setDiag(els.cvDiag, "初期化中", "mid");
+    let candidate = null;
+    if (typeof cv !== "undefined") candidate = cv;
+    else if (window.cv) candidate = window.cv;
+    if (!candidate) return false;
+    if (typeof candidate.then === "function") candidate = await candidate;
+    if (markCvReady(candidate)) return true;
+    if (candidate && !candidate.Mat) {
+      const previous = candidate.onRuntimeInitialized;
+      candidate.onRuntimeInitialized = () => {
+        try { if (typeof previous === "function") previous(); } catch (_) {}
+        markCvReady(candidate);
+      };
+    }
+  } catch (e) {
+    console.error("OpenCV init error", e);
+    setDiag(els.cvDiag, "初期化失敗", "bad");
+    setStatus("OpenCV.jsの初期化に失敗しました: " + (e?.message || String(e)), "bad");
+  }
+  return false;
 }
+
+async function onOpenCvScriptLoaded() {
+  setDiag(els.cvDiag, "初期化中", "mid");
+  await resolveOpenCv();
+}
+
+function onOpenCvScriptError() {
+  setDiag(els.cvDiag, "読み込み失敗", "bad");
+  setStatus("OpenCV.jsを読み込めませんでした。ページを再読み込みしてください。", "bad");
+}
+
 window.Module = window.Module || {};
-window.Module.onRuntimeInitialized = () => { markCvReady(); };
+const previousModuleInit = window.Module.onRuntimeInitialized;
+window.Module.onRuntimeInitialized = () => {
+  try { if (typeof previousModuleInit === "function") previousModuleInit(); } catch (_) {}
+  resolveOpenCv();
+};
+
 let cvPollCount = 0;
 const cvPoll = setInterval(async () => {
-cvPollCount++;
-if (markCvReady()) { clearInterval(cvPoll); return; }
-try {
-if (window.cv && typeof window.cv.then === "function") {
-const resolved = await window.cv;
-if (resolved) window.cv = resolved;
-if (markCvReady()) { clearInterval(cvPoll); return; }
-}
-} catch (_) {}
-updateButtons();
-if (cvPollCount > 120) {
-clearInterval(cvPoll);
-if (!state.cvReady) setStatus("OpenCV.jsの初期化に時間がかかっています。ページを再読み込みしてください。", "warn");
-}
+  cvPollCount++;
+  if (state.cvReady) { clearInterval(cvPoll); return; }
+  const ok = await resolveOpenCv();
+  if (ok || state.cvReady) { clearInterval(cvPoll); return; }
+  updateButtons();
+  if (cvPollCount >= 80) {
+    clearInterval(cvPoll);
+    if (!state.cvReady) {
+      setDiag(els.cvDiag, "初期化タイムアウト", "bad");
+      setStatus("OpenCV.jsの初期化が完了しませんでした。再読み込みしてください。", "bad");
+    }
+  }
 }, 250);
+
 updateDiagnostics();
 updateButtons();
 setStatus("OpenCV.jsを読み込んでいます。読み込み前でも写真選択はできます。");
 initEvents();
 startUiLoop();
 </script>
-<script async src="https://docs.opencv.org/4.x/opencv.js" onerror="document.getElementById('cvDiag').textContent='読み込み失敗';document.getElementById('cvDiag').className='bad';document.getElementById('status').textContent='OpenCV.jsを読み込めませんでした。通信環境を確認して再読み込みしてください。';document.getElementById('status').className='status wide bad';"></script>
+<script async src="./opencv.js?v=4101" onload="onOpenCvScriptLoaded()" onerror="onOpenCvScriptError()"></script>
 </body>
 </html>
