@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0b0d12" />
+<title>Face Link GitHub Edition</title>
+<style>
+:root{
+color-scheme:dark;
+--bg:#0b0d12;
+--panel:#151b26;
+--panel2:#1b2331;
+--text:#f4f7fb;
+--muted:#9aa7ba;
+--border:#2b3447;
+--accent:#84a5ff;
+--ok:#52d49d;
+--warn:#ffc56b;
+--bad:#ff7888;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input{font:inherit}
+.app{max-width:1100px;margin:0 auto;padding:14px 12px 40px}
+h1{margin:2px 0 6px;font-size:24px}
+.sub{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
+.grid{display:grid;gap:12px}
+.panel{
+background:var(--panel);
+border:1px solid var(--border);
+border-radius:16px;
+padding:12px;
+}
+.panel h2{font-size:15px;margin:0 0 8px}
+.stage{
+position:relative;
+min-height:280px;
+background:#07090d;
+border:1px solid var(--border);
+border-radius:14px;
+overflow:hidden;
+display:grid;
+place-items:center;
+}
+.stage canvas{
+width:100%;
+height:auto;
+display:block;
+touch-action:none;
+}
+.placeholder{
+padding:40px 20px;
+text-align:center;
+color:var(--muted);
+}
+.placeholder b{
+display:block;
+color:var(--text);
+font-size:17px;
+margin-bottom:6px;
+}
+.toolbar,.row{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:10px;
+}
+.btn,.filebtn{
+min-height:44px;
+padding:0 14px;
+border-radius:12px;
+border:1px solid var(--border);
+background:var(--panel2);
+color:var(--text);
+display:inline-flex;
+align-items:center;
+justify-content:center;
+font-weight:700;
+text-decoration:none;
+cursor:pointer;
+}
+.btn.primary{
+background:var(--accent);
+color:#0a1020;
+border-color:transparent;
+}
+.btn:disabled{opacity:.42;cursor:default}
+.filebtn input{display:none}
+.prompt,.status,.diag,.rangeCard{
+background:var(--panel);
+border:1px solid var(--border);
+border-radius:14px;
+padding:11px 12px;
+}
+.prompt{font-size:13px;line-height:1.5}
+.prompt strong{color:var(--accent)}
+.status{
+font-size:13px;
+line-height:1.6;
+color:var(--muted);
+}
+.status.ok{color:var(--ok)}
+.status.warn{color:var(--warn)}
+.status.bad{color:var(--bad)}
+.diag{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.diagRow{display:flex;justify-content:space-between;gap:12px}
+.good{color:var(--ok)}
+.mid{color:var(--warn)}
+.bad{color:var(--bad)}
+.controls{display:grid;gap:12px;margin-top:12px}
+.rangeTop{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.rangeTop span:last-child{color:var(--muted)}
+input[type=range]{width:100%;margin-top:8px}
+.help{
+margin-top:12px;
+font-size:12px;
+line-height:1.65;
+color:var(--muted);
+}
+.hidden{display:none !important}
+.caption{
+font-size:12px;
+color:var(--muted);
+margin-top:8px;
+line-height:1.5;
+}
+.zoomBadge{
+position:absolute;
+left:10px; top:10px;
+background:#000b;
+border:1px solid #ffffff24;
+border-radius:999px;
+padding:6px 10px;
+font-size:12px;
+backdrop-filter:blur(8px);
+}
+.loupe{
+position:absolute;
+width:120px;height:120px;
+border-radius:50%;
+border:3px solid #fff;
+overflow:hidden;
+pointer-events:none;
+box-shadow:0 8px 24px rgba(0,0,0,.35);
+background:#000;
+display:none;
+z-index:20;
+}
+.loupe canvas{width:100%;height:100%;display:block}
+.stageHint{
+position:absolute;
+right:10px;
+top:10px;
+background:#000b;
+border:1px solid #ffffff24;
+border-radius:10px;
+padding:7px 10px;
+font-size:11px;
+color:#d8deea;
+max-width:58%;
+backdrop-filter:blur(8px);
+}
+video{display:none}
+@media(min-width:860px){
+.grid{grid-template-columns:1fr 1fr}
+.controls{grid-template-columns:1fr 1fr}
+.wide{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Face Link GitHub Edition</h1>
+<div class="sub">
+GitHub Pagesでそのまま動かせる静的Webアプリです。顔AIは使わず、OpenCV.jsのOptical Flowで自分の顔のポイントを追跡し、
+アップロードした人物写真へ表情を反映します。<br>
+<b>新機能:</b> 写真/カメラ両方でズーム操作、ドラッグで移動、長押し中の虫眼鏡表示、離した位置にポイント配置、診断表示、保存、基準表情リセット対応。
+</div>
+<div class="grid">
+<section class="panel">
+<h2>1. 動かしたい人物写真</h2>
+<div class="stage" id="photoStage">
+<div class="placeholder" id="photoPlaceholder">
+<b>写真を選択</b>
+顔が正面に近く、大きく写っている写真ほど安定します。
+</div>
+<canvas id="photoCanvas" class="hidden"></canvas>
+<div class="zoomBadge hidden" id="photoZoomBadge">100%</div>
+<div class="stageHint">1本指ドラッグで移動 / ＋−でズーム / 長押し中に虫眼鏡、指を離すとポイント配置</div>
+<div class="loupe" id="photoLoupe"><canvas></canvas></div>
+</div>
+<div class="prompt" id="photoPrompt">写真を選択してください。</div>
+<div class="toolbar">
+<label class="filebtn">写真を選択<input id="photoInput" type="file" accept="image/*"></label>
+<button class="btn" id="photoUndo" disabled>1点戻す</button>
+<button class="btn" id="photoReset" disabled>点をやり直す</button>
+</div>
+<div class="toolbar">
+<button class="btn" id="photoZoomOut" disabled>−</button>
+<button class="btn" id="photoZoomIn" disabled>＋</button>
+<button class="btn" id="photoZoomReset" disabled>ズーム初期化</button>
+</div>
+<div class="caption">ポイント順: 左目上 / 左目下 / 右目上 / 右目下 / 口左 / 口右 / 上唇 / 下唇 / 左眉 / 右眉 / 鼻先</div>
+</section>
+<section class="panel">
+<h2>2. 自分の顔をカメラ登録</h2>
+<div class="stage" id="camStage">
+<div class="placeholder" id="camPlaceholder">
+<b>カメラ開始</b>
+GitHub PagesなどのHTTPS環境で開くと、スマホでもカメラを利用できます。
+</div>
+<canvas id="camCanvas" class="hidden"></canvas>
+<div class="zoomBadge hidden" id="camZoomBadge">100%</div>
+<div class="stag
