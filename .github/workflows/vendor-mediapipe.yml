@@ -1,0 +1,47 @@
+name: Vendor MediaPipe assets for vNext
+
+on:
+  push:
+    paths:
+      - '.github/workflows/vendor-mediapipe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download MediaPipe package and face model
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mp-vendor
+          mkdir -p /tmp/mp-vendor vnext/vendor/wasm
+          cd /tmp/mp-vendor
+          npm pack @mediapipe/tasks-vision@1.0.1
+          tar -xzf mediapipe-tasks-vision-1.0.1.tgz
+          cd "$GITHUB_WORKSPACE"
+          cp /tmp/mp-vendor/package/vision_bundle.mjs vnext/vendor/vision_bundle.mjs
+          cp -R /tmp/mp-vendor/package/wasm/. vnext/vendor/wasm/
+          curl -L --fail --retry 4 \
+            'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task' \
+            -o vnext/vendor/face_landmarker.task
+          test -s vnext/vendor/vision_bundle.mjs
+          test -s vnext/vendor/face_landmarker.task
+          find vnext/vendor -maxdepth 2 -type f -printf '%p %k KB\n'
+
+      - name: Commit vendored assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add vnext/vendor
+          if git diff --cached --quiet; then
+            echo 'No changes'
+          else
+            git commit -m 'Vendor MediaPipe 1.0.1 assets for vNext'
+            git push
+          fi
