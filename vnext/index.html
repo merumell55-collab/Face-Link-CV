@@ -7,14 +7,14 @@
 <title>Face Link vNext - Expression Test</title>
 <style>
 :root{color-scheme:dark;--bg:#0b0d12;--panel:#151b26;--panel2:#1c2534;--text:#f4f7fb;--muted:#9aa7ba;--border:#2b3447;--accent:#84a5ff;--ok:#52d49d;--warn:#ffc56b;--bad:#ff7888}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}button{font:inherit}.app{max-width:760px;margin:0 auto;padding:14px 12px 40px}h1{font-size:22px;margin:2px 0 5px}.sub{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}.videoWrap{position:relative;overflow:hidden;border-radius:14px;background:#05070a;aspect-ratio:4/3;display:grid;place-items:center}.videoWrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.faceState{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:#000c;border:1px solid #ffffff22;font-size:12px}.faceState.ok{color:var(--ok)}.faceState.warn{color:var(--warn)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-weight:700}.btn.primary{background:var(--accent);color:#09101f;border-color:transparent}.btn:disabled{opacity:.45}.status{font-size:13px;line-height:1.55;color:var(--muted);margin-top:10px}.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.bad{color:var(--bad)}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:10px}.metricTop{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:7px}.metricValue{font-variant-numeric:tabular-nums;color:var(--muted)}.bar{height:11px;border-radius:999px;background:#090d14;overflow:hidden;border:1px solid #ffffff14}.fill{height:100%;width:0%;background:var(--accent);transition:width .07s linear}.big{grid-column:1/-1}.diag{display:grid;gap:7px;font-size:12px}.diagRow{display:flex;justify-content:space-between;gap:12px}.good{color:var(--ok)}.mid{color:var(--warn)}.bad{color:var(--bad)}details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}.raw{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin-top:10px;font-size:12px;max-height:260px;overflow:auto}.raw span:nth-child(even){font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}.note{font-size:12px;line-height:1.6;color:var(--muted)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}button{font:inherit}.app{max-width:760px;margin:0 auto;padding:14px 12px 40px}h1{font-size:22px;margin:2px 0 5px}.sub{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}.videoWrap{position:relative;overflow:hidden;border-radius:14px;background:#05070a;aspect-ratio:4/3;display:grid;place-items:center}.videoWrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.faceState{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:#000c;border:1px solid #ffffff22;font-size:12px}.faceState.ok{color:var(--ok)}.faceState.warn{color:var(--warn)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-weight:700}.btn.primary{background:var(--accent);color:#09101f;border-color:transparent}.btn:disabled{opacity:.45}.status{font-size:13px;line-height:1.55;color:var(--muted);margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere}.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.bad{color:var(--bad)}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:10px}.metricTop{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:7px}.metricValue{font-variant-numeric:tabular-nums;color:var(--muted)}.bar{height:11px;border-radius:999px;background:#090d14;overflow:hidden;border:1px solid #ffffff14}.fill{height:100%;width:0%;background:var(--accent);transition:width .08s linear}.big{grid-column:1/-1}.diag{display:grid;gap:7px;font-size:12px}.diagRow{display:flex;justify-content:space-between;gap:12px}.good{color:var(--ok)}.mid{color:var(--warn)}.bad{color:var(--bad)}details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}.raw{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin-top:10px;font-size:12px;max-height:260px;overflow:auto}.raw span:nth-child(even){font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}.note{font-size:12px;line-height:1.6;color:var(--muted)}.errorBox{display:none;margin-top:10px;padding:9px 10px;border:1px solid #ff788855;border-radius:10px;background:#2a1118;color:#ffb0ba;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.errorBox.show{display:block}
 @media(max-width:480px){.metrics{grid-template-columns:1fr}.big{grid-column:auto}}
 </style>
 </head>
 <body>
 <div class="app">
   <h1>Face Link vNext</h1>
-  <div class="sub">まずは写真を動かさず、スマホカメラから「瞬き・口・笑顔・眉」の表情値を安定して取得できるかだけ確認するテスト版です。自分の顔への手動ポイント指定はありません。</div>
+  <div class="sub">カメラから「瞬き・口・笑顔・眉」の表情値だけを取得する検証版です。自分の顔への手動ポイント指定はありません。vNext 2ではMediaPipe一式をGitHub内に固定し、外部CDNとWeb Workerを使いません。</div>
 
   <section class="panel">
     <div class="videoWrap">
@@ -23,33 +23,20 @@
     </div>
     <div class="toolbar">
       <button class="btn primary" id="startBtn">カメラ開始</button>
+      <button class="btn" id="retryBtn">モデル再読込</button>
       <button class="btn" id="stopBtn" disabled>カメラ停止</button>
     </div>
-    <div class="status" id="status">表情モデルを準備しています。カメラは先に開始できます。</div>
+    <div class="status" id="status">MediaPipeを準備しています。</div>
+    <div class="errorBox" id="errorBox"></div>
   </section>
 
   <section class="panel">
     <div class="metrics">
-      <div class="metric">
-        <div class="metricTop"><span>Blink L</span><span class="metricValue" id="blinkLVal">0.000</span></div>
-        <div class="bar"><div class="fill" id="blinkLBar"></div></div>
-      </div>
-      <div class="metric">
-        <div class="metricTop"><span>Blink R</span><span class="metricValue" id="blinkRVal">0.000</span></div>
-        <div class="bar"><div class="fill" id="blinkRBar"></div></div>
-      </div>
-      <div class="metric big">
-        <div class="metricTop"><span>口の開き / Jaw Open</span><span class="metricValue" id="jawVal">0.000</span></div>
-        <div class="bar"><div class="fill" id="jawBar"></div></div>
-      </div>
-      <div class="metric">
-        <div class="metricTop"><span>笑顔</span><span class="metricValue" id="smileVal">0.000</span></div>
-        <div class="bar"><div class="fill" id="smileBar"></div></div>
-      </div>
-      <div class="metric">
-        <div class="metricTop"><span>眉上げ</span><span class="metricValue" id="browVal">0.000</span></div>
-        <div class="bar"><div class="fill" id="browBar"></div></div>
-      </div>
+      <div class="metric"><div class="metricTop"><span>Blink L</span><span class="metricValue" id="blinkLVal">0.000</span></div><div class="bar"><div class="fill" id="blinkLBar"></div></div></div>
+      <div class="metric"><div class="metricTop"><span>Blink R</span><span class="metricValue" id="blinkRVal">0.000</span></div><div class="bar"><div class="fill" id="blinkRBar"></div></div></div>
+      <div class="metric big"><div class="metricTop"><span>口の開き / Jaw Open</span><span class="metricValue" id="jawVal">0.000</span></div><div class="bar"><div class="fill" id="jawBar"></div></div></div>
+      <div class="metric"><div class="metricTop"><span>笑顔</span><span class="metricValue" id="smileVal">0.000</span></div><div class="bar"><div class="fill" id="smileBar"></div></div></div>
+      <div class="metric"><div class="metricTop"><span>眉上げ</span><span class="metricValue" id="browVal">0.000</span></div><div class="bar"><div class="fill" id="browBar"></div></div></div>
     </div>
   </section>
 
@@ -57,7 +44,10 @@
     <div class="diag">
       <div class="diagRow"><span>HTTPS</span><b id="secureDiag">確認中</b></div>
       <div class="diagRow"><span>カメラAPI</span><b id="cameraDiag">確認中</b></div>
-      <div class="diagRow"><span>MediaPipeモデル</span><b id="modelDiag">読み込み中</b></div>
+      <div class="diagRow"><span>MediaPipe JS</span><b id="jsDiag">読み込み中</b></div>
+      <div class="diagRow"><span>WASM</span><b id="wasmDiag">待機中</b></div>
+      <div class="diagRow"><span>顔モデル</span><b id="modelAssetDiag">確認中</b></div>
+      <div class="diagRow"><span>MediaPipeモデル</span><b id="modelDiag">初期化中</b></div>
       <div class="diagRow"><span>推論時間</span><b id="inferenceDiag">-</b></div>
       <div class="diagRow"><span>取得FPS</span><b id="fpsDiag">-</b></div>
     </div>
@@ -67,46 +57,58 @@
     </details>
   </section>
 
-  <div class="note">確認方法: カメラを開始 → 正面を向く → 左右の瞬き、口を大きく開く、笑う、眉を上げる、を順番に試してください。0に近いほど弱く、1に近いほど強い判定です。左右の名称はMediaPipeのblendshape名をそのまま使っています。</div>
+  <div class="note">確認方法: カメラを開始 → 正面を向く → 左右の瞬き、口を大きく開く、笑う、眉を上げる、を順番に試してください。表情値は0に近いほど弱く、1に近いほど強い判定です。</div>
 </div>
 
-<script>
+<script type="module">
 const $ = (s) => document.querySelector(s);
 const video = $("#video");
 const startBtn = $("#startBtn");
 const stopBtn = $("#stopBtn");
+const retryBtn = $("#retryBtn");
 const statusEl = $("#status");
+const errorBox = $("#errorBox");
 const faceState = $("#faceState");
 const modelDiag = $("#modelDiag");
+const jsDiag = $("#jsDiag");
+const wasmDiag = $("#wasmDiag");
+const modelAssetDiag = $("#modelAssetDiag");
 const inferenceDiag = $("#inferenceDiag");
 const fpsDiag = $("#fpsDiag");
 const rawScores = $("#rawScores");
 
+let FaceLandmarkerClass = null;
+let FilesetResolverClass = null;
+let faceLandmarker = null;
 let stream = null;
-let workerReady = false;
-let workerBusy = false;
 let running = false;
+let modelReady = false;
+let modelLoading = false;
 let rafId = 0;
-let lastSentAt = 0;
+let lastInferAt = 0;
 let lastResultAt = 0;
 let smoothed = {};
-const FRAME_INTERVAL_MS = 90;
-const SMOOTHING = 0.38;
-
-const worker = new Worker("./face-worker.js?v=1", { type: "module" });
+const FRAME_INTERVAL_MS = 120;
+const SMOOTHING = 0.42;
+const BASE_URL = new URL("./", location.href);
+const BUNDLE_URL = new URL("./vendor/vision_bundle.mjs", BASE_URL).href;
+const WASM_URL = new URL("./vendor/wasm", BASE_URL).href.replace(/\/$/, "");
+const MODEL_URL = new URL("./vendor/face_landmarker.task", BASE_URL).href;
 
 function setStatus(text, cls = "") {
   statusEl.textContent = text;
   statusEl.className = "status" + (cls ? " " + cls : "");
 }
-
-function setDiag(el, text, cls = "") {
-  el.textContent = text;
-  el.className = cls;
+function setDiag(el, text, cls = "") { el.textContent = text; el.className = cls; }
+function showError(stage, error) {
+  const message = error?.message || String(error || "unknown error");
+  errorBox.textContent = `[${stage}] ${message}`;
+  errorBox.classList.add("show");
+  setStatus(`MediaPipeの${stage}に失敗しました。下の詳細を確認してください。`, "bad");
 }
-
-function clamp01(v) { return Math.max(0, Math.min(1, Number(v || 0))); }
-function avg(...values) { return values.reduce((a,b)=>a+b,0) / values.length; }
+function clearError() { errorBox.textContent = ""; errorBox.classList.remove("show"); }
+function clamp01(v){ return Math.max(0, Math.min(1, Number(v || 0))); }
+function avg(...v){ return v.reduce((a,b)=>a+b,0)/v.length; }
 
 function smoothScores(next) {
   const out = { ...smoothed };
@@ -118,159 +120,189 @@ function smoothScores(next) {
   smoothed = out;
   return out;
 }
-
 function showMetric(value, valueId, barId) {
   const v = clamp01(value);
   $(valueId).textContent = v.toFixed(3);
-  $(barId).style.width = `${Math.round(v * 100)}%`;
+  $(barId).style.width = `${Math.round(v*100)}%`;
 }
-
 function updateMetrics(scores) {
   const blinkL = scores.eyeBlinkLeft || 0;
   const blinkR = scores.eyeBlinkRight || 0;
   const jaw = scores.jawOpen || 0;
   const smile = avg(scores.mouthSmileLeft || 0, scores.mouthSmileRight || 0);
-  const brow = Math.max(
-    scores.browInnerUp || 0,
-    avg(scores.browOuterUpLeft || 0, scores.browOuterUpRight || 0)
-  );
-
-  showMetric(blinkL, "#blinkLVal", "#blinkLBar");
-  showMetric(blinkR, "#blinkRVal", "#blinkRBar");
-  showMetric(jaw, "#jawVal", "#jawBar");
-  showMetric(smile, "#smileVal", "#smileBar");
-  showMetric(brow, "#browVal", "#browBar");
-
-  const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+  const brow = Math.max(scores.browInnerUp || 0, avg(scores.browOuterUpLeft || 0, scores.browOuterUpRight || 0));
+  showMetric(blinkL,"#blinkLVal","#blinkLBar");
+  showMetric(blinkR,"#blinkRVal","#blinkRBar");
+  showMetric(jaw,"#jawVal","#jawBar");
+  showMetric(smile,"#smileVal","#smileBar");
+  showMetric(brow,"#browVal","#browBar");
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
   rawScores.replaceChildren();
-  for (const [name, value] of sorted) {
-    const n = document.createElement("span");
-    n.textContent = name;
-    const v = document.createElement("span");
-    v.textContent = clamp01(value).toFixed(3);
-    rawScores.append(n, v);
+  for (const [name,value] of sorted) {
+    const n=document.createElement("span"); n.textContent=name;
+    const v=document.createElement("span"); v.textContent=clamp01(value).toFixed(3);
+    rawScores.append(n,v);
+  }
+}
+function toScoreMap(result) {
+  const categories = result?.faceBlendshapes?.[0]?.categories || [];
+  const scores = {};
+  for (const c of categories) if (c?.categoryName) scores[c.categoryName] = Number(c.score || 0);
+  return scores;
+}
+
+async function checkModelAsset() {
+  try {
+    const r = await fetch(MODEL_URL, { method:"HEAD", cache:"no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const bytes = Number(r.headers.get("content-length") || 0);
+    setDiag(modelAssetDiag, bytes ? `${(bytes/1024/1024).toFixed(2)} MB / OK` : "OK", "good");
+    return true;
+  } catch (e) {
+    setDiag(modelAssetDiag, "取得失敗", "bad");
+    showError("顔モデル確認", e);
+    return false;
   }
 }
 
-worker.onmessage = (event) => {
-  const data = event.data || {};
+async function initializeModel(force = false) {
+  if (modelLoading) return;
+  if (modelReady && !force) return;
+  modelLoading = true;
+  modelReady = false;
+  clearError();
+  retryBtn.disabled = true;
+  setDiag(modelDiag, "初期化中", "mid");
+  setStatus("MediaPipeを初期化しています。初回は10〜20MB程度のローカルWASMを読み込みます。", "warn");
+  try {
+    if (faceLandmarker) { try { faceLandmarker.close(); } catch (_) {} faceLandmarker = null; }
 
-  if (data.type === "ready") {
-    workerReady = true;
+    const assetOK = await checkModelAsset();
+    if (!assetOK) throw new Error("顔モデルファイルをGitHub Pagesから取得できませんでした。");
+
+    setDiag(jsDiag, "読込中", "mid");
+    const mod = await import(BUNDLE_URL + `?v=2`);
+    FaceLandmarkerClass = mod.FaceLandmarker;
+    FilesetResolverClass = mod.FilesetResolver;
+    if (!FaceLandmarkerClass || !FilesetResolverClass) throw new Error("MediaPipeモジュールのexportを取得できませんでした。");
+    setDiag(jsDiag, "OK", "good");
+
+    setDiag(wasmDiag, "読込中", "mid");
+    const vision = await FilesetResolverClass.forVisionTasks(WASM_URL);
+    setDiag(wasmDiag, "OK", "good");
+
+    faceLandmarker = await FaceLandmarkerClass.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: MODEL_URL,
+        delegate: "CPU"
+      },
+      runningMode: "VIDEO",
+      numFaces: 1,
+      minFaceDetectionConfidence: 0.5,
+      minFacePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+      outputFaceBlendshapes: true,
+      outputFacialTransformationMatrixes: false
+    });
+
+    modelReady = true;
     setDiag(modelDiag, "準備完了", "good");
-    setStatus(stream ? "顔を正面に向けて、瞬きや口の動きを試してください。" : "表情モデルの準備が完了しました。カメラを開始してください。", "ok");
-    return;
-  }
-
-  if (data.type === "status") {
-    setDiag(modelDiag, "読み込み中", "mid");
-    setStatus(data.message || "表情モデルを読み込んでいます。", "warn");
-    return;
-  }
-
-  if (data.type === "not-ready") {
-    workerBusy = false;
-    return;
-  }
-
-  if (data.type === "result") {
-    workerBusy = false;
-    const now = performance.now();
-    const fps = lastResultAt ? 1000 / Math.max(1, now - lastResultAt) : 0;
-    lastResultAt = now;
-    inferenceDiag.textContent = `${data.inferenceMs.toFixed(1)} ms`;
-    fpsDiag.textContent = fps ? `${fps.toFixed(1)} fps` : "-";
-
-    if (data.faceDetected) {
-      faceState.textContent = "顔を検出中";
-      faceState.className = "faceState ok";
-      updateMetrics(smoothScores(data.scores));
-    } else {
-      faceState.textContent = "顔が見つかりません";
+    setStatus(stream ? "準備完了。顔を正面に向けて瞬きや口の動きを試してください。" : "表情モデルの準備が完了しました。カメラを開始してください。", "ok");
+    if (stream) {
+      faceState.textContent = "顔を探しています";
       faceState.className = "faceState warn";
     }
-    return;
+  } catch (e) {
+    console.error(e);
+    modelReady = false;
+    if (jsDiag.textContent === "読込中") setDiag(jsDiag, "失敗", "bad");
+    else if (wasmDiag.textContent === "読込中") setDiag(wasmDiag, "失敗", "bad");
+    setDiag(modelDiag, "初期化失敗", "bad");
+    showError("初期化", e);
+  } finally {
+    modelLoading = false;
+    retryBtn.disabled = false;
   }
-
-  if (data.type === "error") {
-    workerBusy = false;
-    setDiag(modelDiag, data.stage === "init" ? "初期化失敗" : "エラー", "bad");
-    setStatus(`MediaPipeエラー: ${data.message}`, "bad");
-  }
-};
-
-worker.onerror = (event) => {
-  workerBusy = false;
-  setDiag(modelDiag, "Worker失敗", "bad");
-  setStatus(`表情解析Workerを起動できませんでした: ${event.message || "unknown error"}`, "bad");
-};
+}
 
 async function startCamera() {
   try {
+    clearError();
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("このブラウザではカメラAPIを利用できません。");
-
     stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: "user",
-        width: { ideal: 640, max: 640 },
-        height: { ideal: 480, max: 480 }
-      }
+      audio:false,
+      video:{ facingMode:"user", width:{ideal:480,max:480}, height:{ideal:360,max:360} }
     });
-
     video.srcObject = stream;
     await video.play();
     running = true;
     startBtn.disabled = true;
     stopBtn.disabled = false;
-    faceState.textContent = workerReady ? "顔を探しています" : "モデル準備中";
+    faceState.textContent = modelReady ? "顔を探しています" : "モデル準備中";
     faceState.className = "faceState warn";
-    setStatus(workerReady ? "顔を正面に向けてください。" : "カメラを開始しました。表情モデルの準備を待っています。", workerReady ? "ok" : "warn");
+    setStatus(modelReady ? "顔を正面に向けてください。" : "カメラを開始しました。モデル準備を待っています。", modelReady ? "ok" : "warn");
     loop();
-  } catch (error) {
-    setStatus(`カメラ開始に失敗しました: ${error?.message || String(error)}`, "bad");
+    if (!modelReady && !modelLoading) initializeModel();
+  } catch (e) {
+    showError("カメラ開始", e);
   }
 }
-
 function stopCamera() {
   running = false;
   cancelAnimationFrame(rafId);
-  workerBusy = false;
-  if (stream) stream.getTracks().forEach(t => t.stop());
+  if (stream) stream.getTracks().forEach(t=>t.stop());
   stream = null;
   video.srcObject = null;
   startBtn.disabled = false;
   stopBtn.disabled = true;
   faceState.textContent = "カメラ停止中";
   faceState.className = "faceState warn";
-  setStatus(workerReady ? "カメラを停止しました。" : "表情モデルを準備しています。", workerReady ? "ok" : "warn");
+  setStatus(modelReady ? "カメラを停止しました。" : "MediaPipeを準備しています。", modelReady ? "ok" : "warn");
 }
 
-async function loop(now = performance.now()) {
+function infer(now) {
+  if (!modelReady || !faceLandmarker || video.readyState < 2) return;
+  const started = performance.now();
+  const result = faceLandmarker.detectForVideo(video, now);
+  const inferenceMs = performance.now() - started;
+  inferenceDiag.textContent = `${inferenceMs.toFixed(1)} ms`;
+  const finished = performance.now();
+  const fps = lastResultAt ? 1000 / Math.max(1, finished-lastResultAt) : 0;
+  lastResultAt = finished;
+  fpsDiag.textContent = fps ? `${fps.toFixed(1)} fps` : "-";
+  const scores = toScoreMap(result);
+  if (Object.keys(scores).length) {
+    faceState.textContent = "顔を検出中";
+    faceState.className = "faceState ok";
+    updateMetrics(smoothScores(scores));
+  } else {
+    faceState.textContent = "顔が見つかりません";
+    faceState.className = "faceState warn";
+  }
+}
+function loop(now = performance.now()) {
   if (!running) return;
-
-  if (workerReady && !workerBusy && video.readyState >= 2 && now - lastSentAt >= FRAME_INTERVAL_MS) {
-    workerBusy = true;
-    lastSentAt = now;
-    try {
-      const bitmap = await createImageBitmap(video);
-      worker.postMessage({ type: "frame", bitmap, timestampMs: performance.now() }, [bitmap]);
-    } catch (error) {
-      workerBusy = false;
-      setStatus(`カメラ画像の取得に失敗しました: ${error?.message || String(error)}`, "bad");
+  if (modelReady && now-lastInferAt >= FRAME_INTERVAL_MS) {
+    lastInferAt = now;
+    try { infer(now); }
+    catch (e) {
+      console.error(e);
+      setDiag(modelDiag,"推論エラー","bad");
+      showError("推論", e);
+      modelReady = false;
     }
   }
-
   rafId = requestAnimationFrame(loop);
 }
 
 startBtn.addEventListener("click", startCamera);
 stopBtn.addEventListener("click", stopCamera);
-window.addEventListener("pagehide", stopCamera);
+retryBtn.addEventListener("click", () => initializeModel(true));
+window.addEventListener("pagehide", () => { stopCamera(); try { faceLandmarker?.close?.(); } catch (_) {} });
 
 setDiag($("#secureDiag"), window.isSecureContext ? "OK" : "NG", window.isSecureContext ? "good" : "bad");
-const cameraApi = !!navigator.mediaDevices?.getUserMedia;
-setDiag($("#cameraDiag"), cameraApi ? "利用可能" : "利用不可", cameraApi ? "good" : "bad");
+setDiag($("#cameraDiag"), navigator.mediaDevices?.getUserMedia ? "利用可能" : "利用不可", navigator.mediaDevices?.getUserMedia ? "good" : "bad");
+setTimeout(() => initializeModel(), 250);
 </script>
 </body>
 </html>
