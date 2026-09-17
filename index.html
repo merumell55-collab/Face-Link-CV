@@ -248,7 +248,7 @@ GitHub PagesなどのHTTPS環境で開くと、スマホでもカメラを利用
 <div class="diag wide">
 <div class="diagRow"><span>HTTPS / 安全な接続</span><b id="secureDiag">確認中</b></div>
 <div class="diagRow"><span>カメラAPI</span><b id="cameraDiag">確認中</b></div>
-<div class="diagRow"><span>OpenCV.js</span><b id="cvDiag">読み込み中</b></div>
+<div class="diagRow"><span>軽量トラッカー</span><b id="cvDiag">読み込み中</b></div>
 <div class="diagRow"><span>写真ポイント</span><b id="photoDiag">0 / 11</b></div>
 <div class="diagRow"><span>カメラポイント</span><b id="camDiag">0 / 11</b></div>
 </div>
@@ -1122,6 +1122,6 @@ setStatus("OpenCV.jsを読み込んでいます。読み込み前でも写真選
 initEvents();
 startUiLoop();
 </script>
-<script async src="./opencv.js?v=4101" onload="onOpenCvScriptLoaded()" onerror="onOpenCvScriptError()"></script>
+<script src="./light-tracker.js?v=2"></script>
 </body>
 </html>
