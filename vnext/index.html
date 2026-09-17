@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0d12">
-<title>Face Link vNext - Expression Test</title>
+<title>Face Link vNext - Blink Link Test</title>
 <style>
 :root{color-scheme:dark;--bg:#0b0d12;--panel:#151b26;--panel2:#1c2534;--text:#f4f7fb;--muted:#9aa7ba;--border:#2b3447;--accent:#84a5ff;--ok:#52d49d;--warn:#ffc56b;--bad:#ff7888}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}button{font:inherit}.app{max-width:760px;margin:0 auto;padding:14px 12px 40px}h1{font-size:22px;margin:2px 0 5px}.sub{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}.videoWrap{position:relative;overflow:hidden;border-radius:14px;background:#05070a;aspect-ratio:4/3;display:grid;place-items:center}.videoWrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.faceState{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:#000c;border:1px solid #ffffff22;font-size:12px}.faceState.ok{color:var(--ok)}.faceState.warn{color:var(--warn)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-weight:700}.btn.primary{background:var(--accent);color:#09101f;border-color:transparent}.btn:disabled{opacity:.45}.status{font-size:13px;line-height:1.55;color:var(--muted);margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere}.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.bad{color:var(--bad)}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:10px}.metricTop{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:7px}.metricValue{font-variant-numeric:tabular-nums;color:var(--muted)}.bar{height:11px;border-radius:999px;background:#090d14;overflow:hidden;border:1px solid #ffffff14}.fill{height:100%;width:0%;background:var(--accent);transition:width .08s linear}.big{grid-column:1/-1}.diag{display:grid;gap:7px;font-size:12px}.diagRow{display:flex;justify-content:space-between;gap:12px}.good{color:var(--ok)}.mid{color:var(--warn)}.bad{color:var(--bad)}details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}.raw{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin-top:10px;font-size:12px;max-height:260px;overflow:auto}.raw span:nth-child(even){font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}.note{font-size:12px;line-height:1.6;color:var(--muted)}.errorBox{display:none;margin-top:10px;padding:9px 10px;border:1px solid #ff788855;border-radius:10px;background:#2a1118;color:#ffb0ba;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.errorBox.show{display:block}
+.photoTitle{font-size:14px;font-weight:800;margin-bottom:9px}.photoWrap{position:relative;overflow:hidden;border-radius:14px;background:#05070a;min-height:180px;display:grid;place-items:center}.photoWrap canvas{display:block;max-width:100%;max-height:58vh;width:auto;height:auto}.photoState{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:#000c;border:1px solid #ffffff22;font-size:12px;color:var(--muted)}.photoState.ok{color:var(--ok)}.fileBtn{position:relative;overflow:hidden}.fileBtn input{position:absolute;inset:0;opacity:0;width:100%;height:100%}.sliderRow{display:flex;align-items:center;gap:10px;flex:1;min-width:220px}.sliderRow input{flex:1}.sliderVal{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
 @media(max-width:480px){.metrics{grid-template-columns:1fr}.big{grid-column:auto}}
 </style>
 </head>
 <body>
 <div class="app">
   <h1>Face Link vNext</h1>
-  <div class="sub">カメラから「瞬き・口・笑顔・眉」の表情値だけを取得する検証版です。自分の顔への手動ポイント指定はありません。vNext 2ではMediaPipe一式をGitHub内に固定し、外部CDNとWeb Workerを使いません。</div>
+  <div class="sub">vNext 3では、カメラから取得した瞬きをアップロード写真へ実際に反映します。自分の顔にも写真にも手動ポイント指定は不要で、写真側の目位置もMediaPipeで自動検出します。</div>
 
   <section class="panel">
     <div class="videoWrap">
@@ -28,6 +29,23 @@
     </div>
     <div class="status" id="status">MediaPipeを準備しています。</div>
     <div class="errorBox" id="errorBox"></div>
+  </section>
+
+  <section class="panel">
+    <div class="photoTitle">写真の瞬きリンク</div>
+    <div class="photoWrap">
+      <canvas id="photoCanvas" width="640" height="480"></canvas>
+      <div class="photoState" id="photoState">写真未選択</div>
+    </div>
+    <div class="toolbar">
+      <label class="btn fileBtn">写真を選択<input id="photoInput" type="file" accept="image/*"></label>
+      <div class="sliderRow">
+        <span>瞬き強度</span>
+        <input id="blinkGain" type="range" min="0.60" max="1.60" step="0.05" value="1.00">
+        <span class="sliderVal" id="blinkGainVal">1.00x</span>
+      </div>
+    </div>
+    <div class="status" id="photoStatus">写真を選ぶと、目の位置を自動検出します。カメラ側のBlink L / Rが写真の左右の目に反映されます。</div>
   </section>
 
   <section class="panel">
@@ -57,7 +75,7 @@
     </details>
   </section>
 
-  <div class="note">確認方法: カメラを開始 → 正面を向く → 左右の瞬き、口を大きく開く、笑う、眉を上げる、を順番に試してください。表情値は0に近いほど弱く、1に近いほど強い判定です。</div>
+  <div class="note">確認方法: ①写真を選択して「写真の顔: 検出済み」になることを確認 → ②カメラ開始 → ③左右の目を瞬きしてください。まずは瞬きだけを写真へ反映する段階です。口・笑顔・眉の値は引き続き確認できますが、写真にはまだ反映しません。</div>
 </div>
 
 <script type="module">
@@ -76,6 +94,13 @@ const modelAssetDiag = $("#modelAssetDiag");
 const inferenceDiag = $("#inferenceDiag");
 const fpsDiag = $("#fpsDiag");
 const rawScores = $("#rawScores");
+const photoInput = $("#photoInput");
+const photoCanvas = $("#photoCanvas");
+const photoCtx = photoCanvas.getContext("2d");
+const photoState = $("#photoState");
+const photoStatus = $("#photoStatus");
+const blinkGain = $("#blinkGain");
+const blinkGainVal = $("#blinkGainVal");
 
 let FaceLandmarkerClass = null;
 let FilesetResolverClass = null;
@@ -88,6 +113,15 @@ let rafId = 0;
 let lastInferAt = 0;
 let lastResultAt = 0;
 let smoothed = {};
+let photoSource = document.createElement("canvas");
+let photoSourceCtx = photoSource.getContext("2d");
+let photoLandmarks = null;
+let photoEyePatches = null;
+let photoReady = false;
+let imageAnalyzing = false;
+let pendingPhotoFile = null;
+let currentBlinkL = 0;
+let currentBlinkR = 0;
 const FRAME_INTERVAL_MS = 120;
 const SMOOTHING = 0.42;
 const BASE_URL = new URL("./", location.href);
@@ -128,6 +162,8 @@ function showMetric(value, valueId, barId) {
 function updateMetrics(scores) {
   const blinkL = scores.eyeBlinkLeft || 0;
   const blinkR = scores.eyeBlinkRight || 0;
+  currentBlinkL = blinkL;
+  currentBlinkR = blinkR;
   const jaw = scores.jawOpen || 0;
   const smile = avg(scores.mouthSmileLeft || 0, scores.mouthSmileRight || 0);
   const brow = Math.max(scores.browInnerUp || 0, avg(scores.browOuterUpLeft || 0, scores.browOuterUpRight || 0));
@@ -136,6 +172,7 @@ function updateMetrics(scores) {
   showMetric(jaw,"#jawVal","#jawBar");
   showMetric(smile,"#smileVal","#smileBar");
   showMetric(brow,"#browVal","#browBar");
+  if (photoReady) renderPhoto();
   const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
   rawScores.replaceChildren();
   for (const [name,value] of sorted) {
@@ -149,6 +186,129 @@ function toScoreMap(result) {
   const scores = {};
   for (const c of categories) if (c?.categoryName) scores[c.categoryName] = Number(c.score || 0);
   return scores;
+}
+
+function setPhotoStatus(text, cls="") {
+  photoStatus.textContent = text;
+  photoStatus.className = "status" + (cls ? " " + cls : "");
+}
+function loadImageFromFile(file) {
+  return new Promise((resolve,reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("画像を読み込めませんでした。")); };
+    img.src = url;
+  });
+}
+function landmarkPoint(lm, index, w, h) {
+  const p = lm[index];
+  return { x:p.x*w, y:p.y*h };
+}
+function buildClosedEyePatch(lm, spec) {
+  const W = photoSource.width, H = photoSource.height;
+  const a = landmarkPoint(lm, spec.outer, W, H);
+  const b = landmarkPoint(lm, spec.inner, W, H);
+  const up = landmarkPoint(lm, spec.upper, W, H);
+  const low = landmarkPoint(lm, spec.lower, W, H);
+  const eyeW = Math.hypot(a.x-b.x, a.y-b.y);
+  const cx = (a.x+b.x)/2;
+  const cy = (up.y+low.y)/2;
+  const w = Math.max(24, eyeW*1.62);
+  const h = Math.max(18, eyeW*0.82);
+  const x = Math.max(0, Math.min(W-w, cx-w/2));
+  const y = Math.max(0, Math.min(H-h, cy-h/2));
+  const rw = Math.min(w, W-x), rh = Math.min(h, H-y);
+  const patch = document.createElement("canvas");
+  patch.width = Math.max(1, Math.round(rw));
+  patch.height = Math.max(1, Math.round(rh));
+  const c = patch.getContext("2d");
+  const pw=patch.width, ph=patch.height;
+  const upperLocal = Math.max(2, Math.min(ph*0.48, up.y-y));
+  const lowerLocal = Math.max(ph*0.52, Math.min(ph-2, low.y-y));
+  c.save();
+  c.beginPath();
+  c.ellipse(pw/2, ph/2, pw*0.49, ph*0.40, 0, 0, Math.PI*2);
+  c.clip();
+  c.drawImage(photoSource, x, y, rw, Math.max(2,upperLocal), 0, 0, pw, ph/2+1);
+  c.drawImage(photoSource, x, y+lowerLocal, rw, Math.max(2,rh-lowerLocal), 0, ph/2-1, pw, ph/2+1);
+  c.restore();
+  return { canvas:patch, x, y, w:rw, h:rh };
+}
+function preparePhotoEyePatches() {
+  if (!photoLandmarks) return;
+  photoEyePatches = {
+    left: buildClosedEyePatch(photoLandmarks, {outer:263, inner:362, upper:386, lower:374}),
+    right: buildClosedEyePatch(photoLandmarks, {outer:33, inner:133, upper:159, lower:145})
+  };
+}
+function normalizedBlink(v) {
+  const gain = Number(blinkGain.value || 1);
+  return Math.pow(clamp01((Number(v||0)-0.07)/0.78) * gain, 1.15);
+}
+function renderPhoto() {
+  if (!photoReady || !photoEyePatches) return;
+  const W=photoSource.width, H=photoSource.height;
+  if (photoCanvas.width!==W || photoCanvas.height!==H) { photoCanvas.width=W; photoCanvas.height=H; }
+  photoCtx.clearRect(0,0,W,H);
+  photoCtx.drawImage(photoSource,0,0);
+  const pairs = [
+    [photoEyePatches.left, normalizedBlink(currentBlinkL)],
+    [photoEyePatches.right, normalizedBlink(currentBlinkR)]
+  ];
+  for (const [p,a] of pairs) {
+    if (!p || a<=0.01) continue;
+    photoCtx.save();
+    photoCtx.globalAlpha = Math.min(1,a);
+    photoCtx.drawImage(p.canvas, p.x, p.y, p.w, p.h);
+    photoCtx.restore();
+  }
+}
+async function analyzePhoto(file) {
+  if (!file) return;
+  pendingPhotoFile = file;
+  if (!modelReady || !faceLandmarker) {
+    setPhotoStatus("モデル準備完了後に写真を解析します。", "warn");
+    return;
+  }
+  imageAnalyzing = true;
+  photoReady = false;
+  photoState.textContent = "写真解析中";
+  photoState.className = "photoState";
+  setPhotoStatus("写真の顔と目位置を自動検出しています…", "warn");
+  try {
+    const img = await loadImageFromFile(file);
+    const maxSide = 900;
+    const scale = Math.min(1, maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+    photoSource.width = Math.max(1,Math.round(img.naturalWidth*scale));
+    photoSource.height = Math.max(1,Math.round(img.naturalHeight*scale));
+    photoSourceCtx.drawImage(img,0,0,photoSource.width,photoSource.height);
+    photoCanvas.width = photoSource.width;
+    photoCanvas.height = photoSource.height;
+    photoCtx.drawImage(photoSource,0,0);
+
+    await faceLandmarker.setOptions({ runningMode:"IMAGE" });
+    const result = faceLandmarker.detect(photoSource);
+    await faceLandmarker.setOptions({ runningMode:"VIDEO" });
+    const lm = result?.faceLandmarks?.[0];
+    if (!lm?.length) throw new Error("写真から顔を検出できませんでした。正面に近く、顔が十分大きく写った写真を試してください。");
+    photoLandmarks = lm;
+    preparePhotoEyePatches();
+    photoReady = true;
+    currentBlinkL = 0; currentBlinkR = 0;
+    renderPhoto();
+    photoState.textContent = "写真の顔: 検出済み";
+    photoState.className = "photoState ok";
+    setPhotoStatus("準備完了。カメラを開始して瞬きしてください。左右別々の瞬きにも追従します。", "ok");
+  } catch(e) {
+    console.error(e);
+    try { await faceLandmarker?.setOptions?.({ runningMode:"VIDEO" }); } catch(_) {}
+    photoState.textContent = "写真解析失敗";
+    photoState.className = "photoState";
+    setPhotoStatus(e?.message || String(e), "bad");
+  } finally {
+    imageAnalyzing = false;
+  }
 }
 
 async function checkModelAsset() {
@@ -181,7 +341,7 @@ async function initializeModel(force = false) {
     if (!assetOK) throw new Error("顔モデルファイルをGitHub Pagesから取得できませんでした。");
 
     setDiag(jsDiag, "読込中", "mid");
-    const mod = await import(BUNDLE_URL + `?v=2`);
+    const mod = await import(BUNDLE_URL + `?v=3`);
     FaceLandmarkerClass = mod.FaceLandmarker;
     FilesetResolverClass = mod.FilesetResolver;
     if (!FaceLandmarkerClass || !FilesetResolverClass) throw new Error("MediaPipeモジュールのexportを取得できませんでした。");
@@ -212,6 +372,7 @@ async function initializeModel(force = false) {
       faceState.textContent = "顔を探しています";
       faceState.className = "faceState warn";
     }
+    if (pendingPhotoFile && !photoReady) analyzePhoto(pendingPhotoFile);
   } catch (e) {
     console.error(e);
     modelReady = false;
@@ -261,7 +422,7 @@ function stopCamera() {
 }
 
 function infer(now) {
-  if (!modelReady || !faceLandmarker || video.readyState < 2) return;
+  if (!modelReady || !faceLandmarker || video.readyState < 2 || imageAnalyzing) return;
   const started = performance.now();
   const result = faceLandmarker.detectForVideo(video, now);
   const inferenceMs = performance.now() - started;
@@ -298,6 +459,8 @@ function loop(now = performance.now()) {
 startBtn.addEventListener("click", startCamera);
 stopBtn.addEventListener("click", stopCamera);
 retryBtn.addEventListener("click", () => initializeModel(true));
+photoInput.addEventListener("change", () => { const f=photoInput.files?.[0]; if (f) analyzePhoto(f); });
+blinkGain.addEventListener("input", () => { blinkGainVal.textContent = `${Number(blinkGain.value).toFixed(2)}x`; if (photoReady) renderPhoto(); });
 window.addEventListener("pagehide", () => { stopCamera(); try { faceLandmarker?.close?.(); } catch (_) {} });
 
 setDiag($("#secureDiag"), window.isSecureContext ? "OK" : "NG", window.isSecureContext ? "good" : "bad");
