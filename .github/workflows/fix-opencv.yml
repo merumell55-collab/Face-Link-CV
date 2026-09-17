@@ -1,4 +1,4 @@
-name: Fix OpenCV mobile loading
+name: Switch to lightweight mobile tracker
 
 on:
   push:
@@ -10,122 +10,178 @@ permissions:
   contents: write
 
 jobs:
-  fix:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Vendor pinned OpenCV.js
-        run: |
-          curl -L --fail --retry 3 \
-            'https://unpkg.com/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js' \
-            -o opencv.js
-          test $(wc -c < opencv.js) -gt 5000000
-          echo "opencv.js bytes: $(wc -c < opencv.js)"
-
-      - name: Patch index.html for robust mobile initialization
+      - name: Remove OpenCV and install lightweight tracker
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          start = s.index('function markCvReady() {')
-          end = s.index('</body>\n</html>', start)
 
-          new = r'''function markCvReady(candidate = null) {
-            if (state.cvReady) return true;
-            try {
-              const c = candidate || window.cv;
-              if (c && typeof c.Mat === "function" && typeof c.calcOpticalFlowPyrLK === "function") {
-                window.cv = c;
-                state.cvReady = true;
-                setDiag(els.cvDiag, "準備完了", "good");
-                updateButtons();
-                setStatus("OpenCV.jsの準備が完了しました。11点ずつ登録すると表情リンクを開始できます。", "ok");
-                return true;
-              }
-            } catch (_) {}
-            return false;
+          s = s.replace('顔AIは使わず、OpenCV.jsのOptical Flowで自分の顔のポイントを追跡し、', '顔AIもOpenCVも使わず、スマホ向けの軽量トラッカーで自分の顔のポイントを追跡し、')
+          s = s.replace('<div class="diagRow"><span>OpenCV.js</span><b id="cvDiag">読み込み中</b></div>', '<div class="diagRow"><span>軽量トラッカー</span><b id="cvDiag">準備完了</b></div>')
+          s = s.replace('cvReady: false,', 'cvReady: true,')
+          s = s.replace('els.startTrackBtn.textContent = "OpenCV準備待ち…";', 'els.startTrackBtn.textContent = "トラッカー準備待ち…";')
+
+          pattern = re.compile(r'function cleanupCV\(\) \{.*?\n\}\n\nfunction startUiLoop\(\) \{', re.S)
+          replacement = r'''function cleanupTracker() {
+            state.trackerCanvas = null;
+            state.trackerCtx = null;
+            state.prevGray = null;
+            state.trackerW = 0;
+            state.trackerH = 0;
+            state.trackLastTs = 0;
           }
 
-          async function resolveOpenCv() {
-            try {
-              setDiag(els.cvDiag, "初期化中", "mid");
-              let candidate = null;
-              if (typeof cv !== "undefined") candidate = cv;
-              else if (window.cv) candidate = window.cv;
-              if (!candidate) return false;
-              if (typeof candidate.then === "function") candidate = await candidate;
-              if (markCvReady(candidate)) return true;
-              if (candidate && !candidate.Mat) {
-                const previous = candidate.onRuntimeInitialized;
-                candidate.onRuntimeInitialized = () => {
-                  try { if (typeof previous === "function") previous(); } catch (_) {}
-                  markCvReady(candidate);
-                };
-              }
-            } catch (e) {
-              console.error("OpenCV init error", e);
-              setDiag(els.cvDiag, "初期化失敗", "bad");
-              setStatus("OpenCV.jsの初期化に失敗しました: " + (e?.message || String(e)), "bad");
+          function captureGrayFrame() {
+            const ctx = state.trackerCtx;
+            const w = state.trackerW, h = state.trackerH;
+            ctx.drawImage(els.video, 0, 0, w, h);
+            const rgba = ctx.getImageData(0, 0, w, h).data;
+            const gray = new Uint8Array(w * h);
+            for (let i = 0, j = 0; i < rgba.length; i += 4, j++) {
+              gray[j] = (rgba[i] * 77 + rgba[i + 1] * 150 + rgba[i + 2] * 29) >> 8;
             }
-            return false;
+            return gray;
           }
 
-          async function onOpenCvScriptLoaded() {
-            setDiag(els.cvDiag, "初期化中", "mid");
-            await resolveOpenCv();
+          function trackOnePoint(prev, curr, px, py, w, h) {
+            const patchR = 3;
+            const searchR = 7;
+            const x0 = Math.round(px), y0 = Math.round(py);
+            if (x0 < patchR + searchR || y0 < patchR + searchR ||
+                x0 >= w - patchR - searchR || y0 >= h - patchR - searchR) {
+              return {x:px, y:py};
+            }
+
+            let bestScore = Infinity;
+            let bestX = x0, bestY = y0;
+            for (let dy = -searchR; dy <= searchR; dy++) {
+              for (let dx = -searchR; dx <= searchR; dx++) {
+                let score = 0;
+                const cx = x0 + dx, cy = y0 + dy;
+                for (let py2 = -patchR; py2 <= patchR; py2++) {
+                  const prow = (y0 + py2) * w;
+                  const crow = (cy + py2) * w;
+                  for (let px2 = -patchR; px2 <= patchR; px2++) {
+                    score += Math.abs(prev[prow + x0 + px2] - curr[crow + cx + px2]);
+                  }
+                }
+                if (score < bestScore) {
+                  bestScore = score;
+                  bestX = cx;
+                  bestY = cy;
+                }
+              }
+            }
+            if (bestScore / 49 > 42) return {x:px, y:py};
+            return {x:bestX, y:bestY};
           }
 
-          function onOpenCvScriptError() {
-            setDiag(els.cvDiag, "読み込み失敗", "bad");
-            setStatus("OpenCV.jsを読み込めませんでした。ページを再読み込みしてください。", "bad");
+          function initTracking() {
+            cleanupTracker();
+            const vw = els.video.videoWidth, vh = els.video.videoHeight;
+            const maxW = 320;
+            const scale = Math.min(1, maxW / vw);
+            state.trackerW = Math.max(160, Math.round(vw * scale));
+            state.trackerH = Math.max(120, Math.round(vh * scale));
+            state.trackerCanvas = document.createElement("canvas");
+            state.trackerCanvas.width = state.trackerW;
+            state.trackerCanvas.height = state.trackerH;
+            state.trackerCtx = state.trackerCanvas.getContext("2d", {willReadFrequently:true});
+            state.prevGray = captureGrayFrame();
+            state.currentCamPoints = state.camPoints.map(p => ({...p}));
+            state.smoothedCamPoints = state.camPoints.map(p => ({...p}));
+            state.neutralCamPoints = state.camPoints.map(p => ({...p}));
+            state.trackLastTs = 0;
           }
 
-          window.Module = window.Module || {};
-          const previousModuleInit = window.Module.onRuntimeInitialized;
-          window.Module.onRuntimeInitialized = () => {
-            try { if (typeof previousModuleInit === "function") previousModuleInit(); } catch (_) {}
-            resolveOpenCv();
-          };
-
-          let cvPollCount = 0;
-          const cvPoll = setInterval(async () => {
-            cvPollCount++;
-            if (state.cvReady) { clearInterval(cvPoll); return; }
-            const ok = await resolveOpenCv();
-            if (ok || state.cvReady) { clearInterval(cvPoll); return; }
+          function startTracking() {
+            if (!state.stream || state.photoPoints.length !== 11 || state.camPoints.length !== 11) return;
+            buildMesh();
+            initTracking();
+            state.tracking = true;
             updateButtons();
-            if (cvPollCount >= 80) {
-              clearInterval(cvPoll);
-              if (!state.cvReady) {
-                setDiag(els.cvDiag, "初期化タイムアウト", "bad");
-                setStatus("OpenCV.jsの初期化が完了しませんでした。再読み込みしてください。", "bad");
-              }
+            setStatus("表情リンク中です。スマホ向け軽量トラッカーで目・口・眉の動きを追跡しています。", "ok");
+            state.trackRaf = requestAnimationFrame(trackLoop);
+          }
+
+          function stopTracking() {
+            state.tracking = false;
+            cancelAnimationFrame(state.trackRaf);
+            cleanupTracker();
+            if (state.photoImg) renderPhotoBase(true);
+            if (state.stream) renderCamBase();
+            updateButtons();
+          }
+
+          function trackLoop(ts) {
+            if (!state.tracking) return;
+            if (state.trackLastTs && ts - state.trackLastTs < 70) {
+              state.trackRaf = requestAnimationFrame(trackLoop);
+              return;
             }
-          }, 250);
+            state.trackLastTs = ts;
+            try {
+              const currGray = captureGrayFrame();
+              const sx = state.trackerW / els.video.videoWidth;
+              const sy = state.trackerH / els.video.videoHeight;
+              const raw = [];
+              for (let i = 0; i < state.currentCamPoints.length; i++) {
+                const p = state.currentCamPoints[i];
+                const q = trackOnePoint(state.prevGray, currGray, p.x * sx, p.y * sy, state.trackerW, state.trackerH);
+                raw.push({x:q.x / sx, y:q.y / sy});
+              }
+              state.currentCamPoints = raw;
+              const alpha = Math.max(0.08, 1 - Number(els.smooth.value) / 100);
+              state.smoothedCamPoints = state.smoothedCamPoints.map((p, i) => ({
+                x: p.x + (state.currentCamPoints[i].x - p.x) * alpha,
+                y: p.y + (state.currentCamPoints[i].y - p.y) * alpha
+              }));
+              state.prevGray = currGray;
+              renderPhotoWarp();
+              renderCamBase();
+            } catch (e) {
+              console.error(e);
+              stopTracking();
+              setStatus("追跡中にエラーが発生しました。カメラ側のポイントを設定し直してください。", "bad");
+              return;
+            }
+            state.trackRaf = requestAnimationFrame(trackLoop);
+          }
 
-          updateDiagnostics();
-          updateButtons();
-          setStatus("OpenCV.jsを読み込んでいます。読み込み前でも写真選択はできます。");
-          initEvents();
-          startUiLoop();
-          </script>
-          <script async src="./opencv.js?v=4101" onload="onOpenCvScriptLoaded()" onerror="onOpenCvScriptError()"></script>
-          '''
+          function startUiLoop() {'''
+          s, n = pattern.subn(replacement, s, count=1)
+          if n != 1:
+            raise SystemExit(f'tracker block replacement failed: {n}')
 
-          p.write_text(s[:start] + new + '</body>\n</html>', encoding='utf-8')
+          tail = re.compile(r'function markCvReady\(candidate = null\) \{.*?startUiLoop\(\);\n</script>\n<script async src="\./opencv\.js\?v=4101" onload="onOpenCvScriptLoaded\(\)" onerror="onOpenCvScriptError\(\)"></script>', re.S)
+          new_tail = '''state.cvReady = true;\nupdateDiagnostics();\nupdateButtons();\nsetDiag(els.cvDiag, "準備完了", "good");\nsetStatus("軽量トラッカーの準備が完了しました。写真とカメラの11点を登録してください。", "ok");\ninitEvents();\nstartUiLoop();\n</script>'''
+          s, n = tail.subn(new_tail, s, count=1)
+          if n != 1:
+            raise SystemExit(f'OpenCV tail replacement failed: {n}')
+
+          s = re.sub(r'\n\s*loupeCtx\.save\(\);\s*\n\s*loupeCtx\.beginPath\(\);\s*\n\s*loupeCtx\.arc\(60,60,60,0,Math\.PI\*2\);\s*\n\s*loupeCtx\.clip\(\);\s*\n\s*loupeCtx\.drawImage\(canvas, srcPos\.x \? 0 : 0, 0\); // dummy call not used\s*\n\s*loupeCtx\.restore\(\);\s*\n', '\n', s)
+
+          p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Commit fixed app and local OpenCV
+          rm -f opencv.js
+
+      - name: Commit lightweight version
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html opencv.js
+          git add -A index.html opencv.js
           if git diff --cached --quiet; then
             echo 'No changes'
           else
-            git commit -m 'Fix OpenCV mobile initialization and vendor 4.10.0'
+            git commit -m 'Replace OpenCV with lightweight mobile tracker'
             git push
           fi
